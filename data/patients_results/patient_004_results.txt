@@ -1,0 +1,6 @@
+Paciente ID: 004
+Nombre: Juan Zapato
+Documento: 1089382
+Edad: 19
+Archivo FASTA: data/adn/
+Enfermedades detectadas: Ebola, Cancer

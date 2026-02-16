@@ -1,0 +1,13 @@
+{
+  "patient_id": "008",
+  "full_name": "Stefania buscando amante",
+  "document_id": "2384432",
+  "contact_email": "stefa.gamer@correo.com",
+  "registration_date": "Sep 8, 2025, 2:30:08 AM",
+  "age": 24,
+  "sex": "F",
+  "clinical_notes": "data/adn/patient008.fasta",
+  "checksum_fasta": "MD5",
+  "file_size_bytes": 86,
+  "is_active": true
+}

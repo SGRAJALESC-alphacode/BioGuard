@@ -1,0 +1,6 @@
+Paciente ID: 007
+Nombre: Juan birgilio chamzazu
+Documento: 203148
+Edad: 56
+Archivo FASTA: data/adn/patient007.fasta
+Enfermedades detectadas: Ninguna
