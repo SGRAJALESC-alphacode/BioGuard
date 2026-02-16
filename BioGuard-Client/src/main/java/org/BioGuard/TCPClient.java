@@ -79,6 +79,17 @@ public class TCPClient {
     /*
      *  // Objetivo //
      *     Enviar un mensaje al servidor TCP de forma segura y recibir la respuesta.
+     *  // Entradas //
+     *     message : Cadena de texto a enviar al servidor (generalmente en formato JSON).
+     *  // Proceso //
+     *     1. Establece una conexión segura SSL/TLS llamando a connect().
+     *     2. Envía el mensaje al servidor usando DataOutputStream.writeUTF().
+     *     3. Recibe la respuesta del servidor usando DataInputStream.readUTF().
+     *     4. Muestra en consola el mensaje y la respuesta.
+     *     5. Maneja excepciones de conexión mostrando un mensaje de error.
+     *     6. Cierra la conexión en el bloque finally.
+     *  // Salidas //
+     *     Imprime en consola el mensaje enviado y la respuesta recibida.
      */
     public void sendMessage(String message) {
         try {
@@ -98,6 +109,15 @@ public class TCPClient {
     /*
      *  // Objetivo //
      *     Cerrar de manera segura la conexión TCP y los flujos asociados con el servidor.
+     *  // Entradas //
+     *     Ninguna, utiliza los atributos privados de la clase.
+     *  // Proceso //
+     *     1. Verifica si dataInputStream existe; si es así, lo cierra.
+     *     2. Verifica si dataOutputStream existe; si es así, lo cierra.
+     *     3. Verifica si clientSocket existe; si es así, lo cierra.
+     *     4. Captura y muestra cualquier IOException que ocurra durante el cierre.
+     *  // Salidas //
+     *     Ninguna, pero libera los recursos de conexión al servidor.
      */
     public void closeConnection() {
         try {

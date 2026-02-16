@@ -60,7 +60,22 @@ public class Patient {
         this.file_size_bytes = file_size_bytes;
     }
 
-    // Getters y Setters para atributos privados
+    /*
+     *  // Objetivo //
+     *     Proveer métodos de acceso (getters) y modificación (setters) para los atributos del paciente.
+     *  // Atributos Accedidos //
+     *     patient_id       : Identificador único del paciente.
+     *     full_name        : Nombre completo del paciente.
+     *     document_id      : Documento de identidad del paciente.
+     *     contact_email    : Correo electrónico de contacto.
+     *     registration_date: Fecha de registro del paciente en el sistema.
+     *     age              : Edad del paciente.
+     *     sex              : Sexo del paciente (M/F).
+     *     clinical_notes   : Ruta del archivo FASTA asociado al paciente.
+     *     checksum_fasta   : Checksum del archivo FASTA para validación.
+     *     file_size_bytes  : Tamaño del archivo FASTA en bytes.
+     *     is_active        : Indica si el paciente está activo (soft delete).
+     */
     public String getPatient_id() {
         return patient_id;
     }
@@ -121,7 +136,6 @@ public class Patient {
         return clinical_notes;
     }
 
-    /*Proveer métodos de acceso y modificación para los atributos clínicos y estado del paciente.*/
     public void setClinical_notes(String clinical_notes) {
         this.clinical_notes = clinical_notes;
     }
@@ -150,7 +164,16 @@ public class Patient {
         this.is_active = is_active;
     }
 
-    /*Convertir los atributos del paciente en un mapa clave-valor para su manipulación o serialización.*/
+    /*
+     *  // Objetivo //
+     *     Convertir los atributos del paciente en un mapa clave-valor para su manipulación o serialización.
+     *  // Entradas //
+     *     Ninguna, utiliza los valores actuales de los atributos del paciente.
+     *  // Proceso //
+     *     Crea un HashMap y agrega cada atributo del paciente con su correspondiente clave.
+     *  // Salidas //
+     *     Retorna un Map<String, Object> con todos los atributos del paciente.
+     */
     public Map<String, Object> toMap() {
         Map<String, Object> data = new HashMap<>();
         data.put("patient_id", patient_id);

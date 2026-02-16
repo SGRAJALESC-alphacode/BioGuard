@@ -8,17 +8,23 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+/*
+ *  // Objetivo //
+ *     Configurar el entorno SSL/TLS y arrancar un servidor TCP seguro para recibir conexiones
+ *     de clientes y procesar pacientes de manera cifrada.
+ *  // Atributos //
+ *     No tiene atributos; es una clase principal que solo contiene el método main().
+ *  // Proceso del main() //
+ *     1. Carga el archivo de configuración "config.properties" que contiene rutas y contraseñas.
+ *     2. Obtiene la ruta del certificado SSL y su contraseña de las propiedades.
+ *     3. Valida que el certificado exista en el sistema de archivos.
+ *     4. Configura las propiedades del sistema para keyStore y trustStore usando PKCS12.
+ *     5. Crea una instancia del servidor TCP en el puerto 2020.
+ *     6. Inicia el servidor que escuchará conexiones seguras de clientes indefinidamente.
+ *  // Salidas //
+ *     Mensaje de confirmación indicando que el servidor está activo y escuchando conexiones.
+ */
 public class Main {
-    /** Main class to start the TCP server.
-     * Configures SSL config.config.properties and initiates the server on the specified port.
-     */
-
-    /*
-     *
-     *     Configurar el entorno SSL/TLS y arrancar un servidor TCP para recibir conexiones seguras.
-     */
     public static void main(String[] args) {
         Properties p = new Properties();
 
