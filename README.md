@@ -29,7 +29,8 @@
 ## Guía de Instalación
 
 ### Requisitos Previos
-- Java JDK 11 o superior
+- **Amazon Corretto 25** o superior
+- Java JDK 25 (Corretto)
 - Certificados SSL generados
 - Git (opcional)
 
