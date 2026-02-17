@@ -8,9 +8,14 @@ import javax.net.ssl.SSLSocket;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+<<<<<<< Updated upstream
 import java.util.List;
 import org.BioGuard.exceptions.GeneticAnalysisException;
 import org.BioGuard.exceptions.ServerCommunicationException;
+=======
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+>>>>>>> Stashed changes
 
 
 /*
@@ -41,6 +46,7 @@ import org.BioGuard.exceptions.ServerCommunicationException;
  */
 public class TCPServer {
     private int serverPort;
+    private ExecutorService threadPool;
 
     /*
      *  // Objetivo //
@@ -54,6 +60,7 @@ public class TCPServer {
      */
     public TCPServer(int serverPort) {
         this.serverPort = serverPort;
+        this.threadPool = Executors.newCachedThreadPool();
     }
 
     /*
@@ -84,6 +91,7 @@ public class TCPServer {
         try {
             SSLServerSocketFactory sslSocketFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
             SSLServerSocket serverSocket = (SSLServerSocket) sslSocketFactory.createServerSocket(serverPort);
+<<<<<<< Updated upstream
             System.out.println("Server started on port: " + serverPort);
 
             while (true) {
@@ -129,7 +137,24 @@ public class TCPServer {
                 } catch (IOException e) {
                     System.out.println("Error en I/O con cliente: " + e.getMessage());
                 }
+=======
+
+            System.out.println("========================================");
+            System.out.println("[SERVIDOR BIOGUARD]");
+            System.out.println("[ESTADO] ACTIVO");
+            System.out.println("[PUERTO] " + serverPort + " (SSL/TLS)");
+            System.out.println("[HILOS] Pool de hilos activo");
+            System.out.println("========================================");
+
+            while (true) {
+                SSLSocket clientSocket = (SSLSocket) serverSocket.accept();
+                System.out.println("[CONEXIÓN] Cliente conectado: " + clientSocket.getInetAddress());
+
+                // Usar pool de hilos para mejor concurrencia
+                threadPool.execute(new ClientHandler(clientSocket));
+>>>>>>> Stashed changes
             }
+
         } catch (IOException e) {
             System.out.println("Server error: " + e.getMessage());
         }
