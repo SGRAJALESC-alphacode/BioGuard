@@ -1,90 +1,132 @@
 package org.BioGuard;
 
-/*
- * // Objetivo
- *    Proveer una capa cliente para conectarse al `BioGuard-Server` mediante
- *    TLS/SSL, enviar peticiones en formato `COMANDO|PAYLOAD` y leer respuestas.
- *
- * // Atributos
- *    serverAddress     : Dirección del servidor (String)
- *    serverPort        : Puerto del servidor (int)
- *    clientSocket      : Socket SSL utilizado para la conexión (Socket)
- *    dataInputStream   : Stream de lectura para respuestas (DataInputStream)
- *    dataOutputStream  : Stream de escritura para requests (DataOutputStream)
- *
- * // Comportamiento
- *    connect()         : Configura SSL a partir de recursos y abre la conexión
- *    sendRequest()     : Envía `COMANDO|payload` y devuelve la respuesta del servidor
- *    closeConnection() : Cierra streams y socket
- */
-
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.Socket;
-import java.net.URL;
+import java.io.*;
 import java.util.Properties;
 
 public class TCPClient {
-    private String serverAddress;
-    private int serverPort;
-    private Socket clientSocket;
-    private DataInputStream dataInputStream;
-    private DataOutputStream dataOutputStream;
 
-    public TCPClient(String serverAddress, int serverPort, Properties config) {
-        this.serverAddress = serverAddress;
-        this.serverPort = serverPort;
+    private final String serverAddress;
+    private final int serverPort;
 
-        String certResource = config.getProperty("SSL_CERTIFICATE_ROUTE");
-        String ksPassword = config.getProperty("SSL_PASSWORD");
+    public TCPClient(String address, int port, Properties config) {
+        this.serverAddress = address;
+        this.serverPort = port;
 
-        // BUSCAR EL RECURSO DINÁMICAMENTE
-        URL certUrl = getClass().getClassLoader().getResource(certResource);
+        // Configurar truststore
+        String certPath = config.getProperty("SSL_CERTIFICATE_ROUTE");
+        String certPass = config.getProperty("SSL_PASSWORD");
 
-        if (certUrl == null) {
-            throw new IllegalArgumentException("No se encontró el certificado en los recursos: " + certResource);
+        if (certPath != null && !certPath.isEmpty()) {
+            File certFile = buscarTruststore(certPath);
+
+            if (certFile != null && certFile.exists()) {
+                System.setProperty("javax.net.ssl.trustStore", certFile.getAbsolutePath());
+                System.setProperty("javax.net.ssl.trustStorePassword", certPass);
+                System.setProperty("javax.net.ssl.trustStoreType", "JKS");
+                System.out.println("[INFO] TrustStore configurado: " + certFile.getAbsolutePath());
+            } else {
+                System.err.println("[ERROR] No se encontró truststore. Buscado en:");
+                System.err.println("        - " + certPath);
+                System.err.println("        - src/main/resources/certs/truststore.jks");
+                System.err.println("        - certs/truststore.jks");
+                System.err.println("        - " + new File("BioGuard-Client/src/main/resources/certs/truststore.jks").getAbsolutePath());
+            }
         }
-
-        // Convertir URL a ruta absoluta de archivo
-        String ksRoute = certUrl.getPath();
-
-        System.setProperty("javax.net.ssl.keyStore", ksRoute);
-        System.setProperty("javax.net.ssl.keyStorePassword", ksPassword);
-        System.setProperty("javax.net.ssl.keyStoreType", "PKCS12");
-        System.setProperty("javax.net.ssl.trustStore", ksRoute);
-        System.setProperty("javax.net.ssl.trustStorePassword", ksPassword);
-        System.setProperty("javax.net.ssl.trustStoreType", "PKCS12");
     }
 
-    public void connect() throws IOException {
-        SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-        // El casting a SSLSocket no es estrictamente necesario aquí si usas la factory Default
-        this.clientSocket = sslSocketFactory.createSocket(serverAddress, serverPort);
-        this.dataInputStream = new DataInputStream(this.clientSocket.getInputStream());
-        this.dataOutputStream = new DataOutputStream(this.clientSocket.getOutputStream());
+    /**
+     * Busca el truststore en múltiples ubicaciones
+     */
+    private File buscarTruststore(String ruta) {
+        System.out.println("[DEBUG] Buscando truststore...");
+
+        // 1. Ruta exacta del properties
+        File file = new File(ruta);
+        if (file.exists()) {
+            System.out.println("[DEBUG] Truststore encontrado en: " + file.getAbsolutePath());
+            return file;
+        }
+
+        // 2. Buscar en resources del cliente
+        try {
+            java.net.URL resourceUrl = getClass().getClassLoader().getResource("certs/truststore.jks");
+            if (resourceUrl != null) {
+                file = new File(resourceUrl.getPath());
+                if (file.exists()) {
+                    System.out.println("[DEBUG] Truststore encontrado en resources: " + file.getAbsolutePath());
+                    return file;
+                }
+            }
+        } catch (Exception e) {
+            // Ignorar
+        }
+
+        // 3. Buscar en src/main/resources/certs
+        file = new File("src/main/resources/certs/truststore.jks");
+        if (file.exists()) {
+            System.out.println("[DEBUG] Truststore encontrado en: " + file.getAbsolutePath());
+            return file;
+        }
+
+        // 4. Buscar en certs/ (raíz del cliente)
+        file = new File("certs/truststore.jks");
+        if (file.exists()) {
+            System.out.println("[DEBUG] Truststore encontrado en: " + file.getAbsolutePath());
+            return file;
+        }
+
+        // 5. Buscar en BioGuard-Client/src/main/resources/certs
+        String userDir = System.getProperty("user.dir");
+        file = new File(userDir, "BioGuard-Client/src/main/resources/certs/truststore.jks");
+        if (file.exists()) {
+            System.out.println("[DEBUG] Truststore encontrado en: " + file.getAbsolutePath());
+            return file;
+        }
+
+        // 6. Buscar en la carpeta del proyecto
+        file = new File("BioGuard-Client/certs/truststore.jks");
+        if (file.exists()) {
+            System.out.println("[DEBUG] Truststore encontrado en: " + file.getAbsolutePath());
+            return file;
+        }
+
+        return null;
     }
 
     public String sendRequest(String command, String payload) {
+        SSLSocket socket = null;
+        BufferedReader in = null;
+        PrintWriter out = null;
+
         try {
-            this.connect();
-            this.dataOutputStream.writeUTF(command + "|" + payload);
-            return this.dataInputStream.readUTF();
-        } catch (IOException e) {
+            System.out.println("[DEBUG] Conectando a " + serverAddress + ":" + serverPort);
+
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            socket = (SSLSocket) factory.createSocket(serverAddress, serverPort);
+            socket.setSoTimeout(10000);
+
+            out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+
+            String request = command + "|" + payload;
+            System.out.println("[DEBUG] Enviando: " + request);
+            out.println(request);
+
+            String response = in.readLine();
+            System.out.println("[DEBUG] Respuesta: " + response);
+
+            return response != null ? response : "ERROR: Respuesta vacía";
+
+        } catch (Exception e) {
+            System.err.println("[ERROR] " + e.getMessage());
+            e.printStackTrace();
             return "ERROR DE CONEXIÓN: " + e.getMessage();
         } finally {
-            this.closeConnection();
-        }
-    }
-
-    public void closeConnection() {
-        try {
-            if (this.dataInputStream != null) this.dataInputStream.close();
-            if (this.dataOutputStream != null) this.dataOutputStream.close();
-            if (this.clientSocket != null) this.clientSocket.close();
-        } catch (IOException e) {
-            System.err.println("Error closing connection: " + e.getMessage());
+            try { if (out != null) out.close(); } catch (Exception e) {}
+            try { if (in != null) in.close(); } catch (Exception e) {}
+            try { if (socket != null) socket.close(); } catch (Exception e) {}
         }
     }
 }

@@ -1,61 +1,37 @@
 package org.BioGuard;
 
-/*
- * // Objetivo
- *    Escuchar conexiones entrantes TLS/SSL en un puerto configurado y delegar
- *    cada conexión a un `ClientHandler` para procesar comandos. Gestiona un
- *    pool de hilos para concurrencia.
- *
- * // Atributos
- *    serverPort : Puerto en el que escucha el servidor (int)
- *    threadPool : ExecutorService para manejar concurrencia
- *
- * // Comportamiento
- *    start() : Inicializa el SSLServerSocket, imprime info de estado y entra
- *              en un loop de aceptación; por cada cliente crea un ClientHandler
- *              y lo envía al pool de hilos.
- */
-
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocket;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class TCPServer {
-    private final int serverPort;
-    private final ExecutorService threadPool;
 
-    public TCPServer(int serverPort) {
-        this.serverPort = serverPort;
-        this.threadPool = Executors.newCachedThreadPool();
+    private final int serverPort;
+
+    public TCPServer(int port) {
+        this.serverPort = port;
     }
 
     public void start() {
         try {
-            // REQUERIMIENTO: Uso obligatorio de SSL
-            SSLServerSocketFactory sslSocketFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
-            try (SSLServerSocket serverSocket = (SSLServerSocket) sslSocketFactory.createServerSocket(serverPort)) {
+            SSLServerSocketFactory factory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+            SSLServerSocket serverSocket = (SSLServerSocket) factory.createServerSocket(serverPort);
+            serverSocket.setReuseAddress(true);
 
-                System.out.println("========================================");
-                System.out.println("[SERVIDOR BIOGUARD]");
-                System.out.println("[ESTADO] ACTIVO");
-                System.out.println("[PUERTO] " + serverPort + " (SSL/TLS)");
-                System.out.println("[HILOS] Pool de hilos activo");
-                System.out.println("========================================");
+            System.out.println("==========================================");
+            System.out.println("Servidor BioGuard iniciado (MODO SSL)");
+            System.out.println("Puerto: " + serverPort);
+            System.out.println("==========================================");
 
-                while (true) {
-                    SSLSocket clientSocket = (SSLSocket) serverSocket.accept();
-                    System.out.println("[CONEXIÓN] Cliente conectado: " + clientSocket.getInetAddress());
+            while (true) {
+                javax.net.ssl.SSLSocket clientSocket = (javax.net.ssl.SSLSocket) serverSocket.accept();
+                System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
 
-                    // Usar pool de hilos para mejor concurrencia
-                    threadPool.execute(new ClientHandler(clientSocket));
-                }
+                new Thread(new ClientHandler(clientSocket)).start();
             }
 
         } catch (IOException e) {
-            System.err.println("[ERROR SERVIDOR] " + e.getMessage());
+            System.err.println("Error en servidor: " + e.getMessage());
         }
     }
 }

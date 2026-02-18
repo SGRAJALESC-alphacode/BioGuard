@@ -1,58 +1,41 @@
 package org.BioGuard;
 
-/*
- * // Objetivo
- *    Gestionar una conexión de cliente en el servidor: leer solicitudes en formato
- *    COMANDO|PAYLOAD, despachar a los servicios correspondientes y devolver la
- *    respuesta por el socket SSL.
- *
- * // Atributos principales
- *    socket             : SSLSocket que representa la conexión cliente-servidor.
- *    gson               : Gson para serializar/deserializar JSON.
- *    pacienteService    : Servicio para operaciones sobre pacientes (registro, consulta).
- *    virusService       : Servicio para operaciones sobre virus (guardar, cargar).
- *    diagnosticoService : Servicio para diagnóstico de muestras y generación de reportes.
- *
- * // Comportamiento / métodos
- *    run()              : Ciclo de vida del handler; lee request, parsea comando y payload,
- *                         delega al método procesarComando() y escribe la respuesta.
- *    procesarComando()  : Dispatchea comandos como REGISTRAR_PACIENTE, CONSULTAR_PACIENTE,
- *                         CARGAR_VIRUS, DIAGNOSTICAR, REPORTE_ALTO_RIESGO, REPORTE_MUTACIONES.
- */
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import org.BioGuard.exception.*;
-import javax.net.ssl.SSLSocket;
 import java.io.*;
-import java.lang.reflect.Type;
+import java.net.Socket;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Manejador de peticiones de clientes (SIN SSL)
+ */
 public class ClientHandler implements Runnable {
-    private final SSLSocket socket;
-    private final Gson gson = new Gson();
-    private final PacienteService pacienteService = new PacienteService();
-    private final VirusService virusService = new VirusService();
-    private final DiagnosticoService diagnosticoService = new DiagnosticoService();
 
-    public ClientHandler(SSLSocket socket) {
+    private final Socket socket;
+    private final PacienteService pacienteService;
+    private final VirusService virusService;
+    private final DiagnosticoService diagnosticoService;
+
+    public ClientHandler(Socket socket) {
         this.socket = socket;
+        this.pacienteService = new PacienteService();
+        this.virusService = new VirusService();
+        this.diagnosticoService = new DiagnosticoService();
     }
 
     @Override
     public void run() {
-        try (DataInputStream in = new DataInputStream(socket.getInputStream());
-             DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            // Formato de comunicación: COMANDO|JSON
-            String request = in.readUTF();
-            String[] parts = request.split("\\|", 2);
+            String request = in.readLine();
+            if (request == null) return;
+
+            System.out.println("Comando recibido: " + request);
+            String[] parts = request.split("\\|");
             String command = parts[0];
-            String payload = parts.length > 1 ? parts[1] : "";
 
-            String response = procesarComando(command, payload);
-            out.writeUTF(response);
+            String response = procesarComando(command, parts);
+            out.println(response);
 
         } catch (IOException e) {
             System.err.println("Error I/O cliente: " + e.getMessage());
@@ -61,72 +44,101 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private String procesarComando(String command, String payload) {
+    private String procesarComando(String command, String[] parts) {
         try {
-            return switch (command) {
-                case "REGISTRAR_PACIENTE" -> registrarPaciente(payload);
-                case "CONSULTAR_PACIENTE" -> consultarPaciente(payload);
-                case "CARGAR_VIRUS" -> cargarVirus(payload);
-                case "DIAGNOSTICAR" -> diagnosticarMuestra(payload);
-                case "REPORTE_ALTO_RIESGO" -> generarReporteAltoRiesgo();
-                case "REPORTE_MUTACIONES" -> generarReporteMutaciones(payload);
-                default -> "ERROR: Comando desconocido";
-            };
-        } catch (PacienteDuplicadoException | FormatoFastaInvalidoException | MuestraNoEncontradaException | DiagnosticoException e) {
-            return "ERROR: " + e.getMessage();
-        } catch (Exception e) {
-            return "ERROR: Error interno";
-        }
-    }
-
-    private String registrarPaciente(String payload) throws PacienteDuplicadoException, IOException {
-        Paciente p = gson.fromJson(payload, Paciente.class);
-        pacienteService.registrarPaciente(p);
-        return "OK: Paciente registrado";
-    }
-
-    private String consultarPaciente(String payload) {
-        try {
-            Paciente p = pacienteService.consultarPaciente(payload);
-            return p != null ? gson.toJson(p) : "ERROR: No encontrado";
+            switch (command) {
+                case "REGISTRAR_PACIENTE":
+                    return registrarPaciente(parts);
+                case "CONSULTAR_PACIENTE":
+                    return consultarPaciente(parts);
+                case "CARGAR_VIRUS":
+                    return cargarVirus(parts);
+                case "DIAGNOSTICAR":
+                    return diagnosticarMuestra(parts);
+                case "REPORTE_ALTO_RIESGO":
+                    return generarReporteAltoRiesgo();
+                case "REPORTE_MUTACIONES":
+                    return generarReporteMutaciones(parts);
+                default:
+                    return "ERROR: Comando desconocido";
+            }
+        } catch (PacienteDuplicadoException e) {
+            return "ERROR_DUPLICADO: " + e.getMessage();
+        } catch (FormatoFastaInvalidoException e) {
+            return "ERROR_FASTA: " + e.getMessage();
+        } catch (MuestraNoEncontradaException e) {
+            return "ERROR_MUESTRA: " + e.getMessage();
+        } catch (DiagnosticoException e) {
+            return "ERROR_DIAGNOSTICO: " + e.getMessage();
         } catch (IOException e) {
-            return "ERROR: " + e.getMessage();
+            return "ERROR_IO: " + e.getMessage();
+        } catch (Exception e) {
+            return "ERROR_INTERNO: " + e.getMessage();
         }
     }
 
-    private String cargarVirus(String payload) throws FormatoFastaInvalidoException, IOException {
-        Type type = new TypeToken<Map<String, String>>(){}.getType();
-        Map<String, String> data = gson.fromJson(payload, type);
-        virusService.guardarVirus(data);
-        return "OK: Virus guardado";
+    private String registrarPaciente(String[] parts) throws PacienteDuplicadoException, IOException {
+        if (parts.length < 9) return "ERROR: Faltan datos";
+
+        Paciente p = new Paciente();
+        p.setDocumento(parts[1]);
+        p.setNombre(parts[2]);
+        p.setApellido(parts[3]);
+        p.setEdad(Integer.parseInt(parts[4]));
+        p.setCorreo(parts[5]);
+        p.setGenero(parts[6]);
+        p.setCiudad(parts[7]);
+        p.setPais(parts[8]);
+
+        pacienteService.registrarPaciente(p);
+        return "OK: Paciente " + p.getDocumento() + " registrado";
     }
 
-    private String diagnosticarMuestra(String payload) throws MuestraNoEncontradaException, DiagnosticoException, IOException {
-        Type type = new TypeToken<Map<String, String>>(){}.getType();
-        Map<String, String> data = gson.fromJson(payload, type);
+    private String consultarPaciente(String[] parts) throws IOException {
+        if (parts.length < 2) return "ERROR: Documento requerido";
+
+        Paciente p = pacienteService.consultarPaciente(parts[1]);
+        if (p == null) return "ERROR: Paciente no encontrado";
+
+        return String.join("|",
+                p.getDocumento(), p.getNombre(), p.getApellido(),
+                String.valueOf(p.getEdad()), p.getCorreo(),
+                p.getGenero(), p.getCiudad(), p.getPais()
+        );
+    }
+
+    private String cargarVirus(String[] parts) throws FormatoFastaInvalidoException, IOException {
+        if (parts.length < 4) return "ERROR: Faltan datos";
+
+        virusService.guardarVirus(parts[1], parts[2], parts[3]);
+        return "OK: Virus " + parts[1] + " guardado";
+    }
+
+    private String diagnosticarMuestra(String[] parts) throws MuestraNoEncontradaException, DiagnosticoException, IOException {
+        if (parts.length < 4) return "ERROR: Faltan datos";
 
         List<Diagnostico> resultados = diagnosticoService.diagnosticarMuestra(
-                data.get("documento"),
-                data.get("fecha_muestra"),
-                data.get("secuencia")
+                parts[1], parts[2], parts[3]
         );
 
-        return resultados.isEmpty() ? "No se detectaron virus" : "Virus detectados: " + resultados.size();
+        if (resultados.isEmpty()) return "RESULTADO: No se detectaron virus";
+
+        StringBuilder sb = new StringBuilder("RESULTADO:");
+        for (Diagnostico d : resultados) {
+            sb.append("|").append(d.toString());
+        }
+        return sb.toString();
     }
 
-    private String generarReporteAltoRiesgo() {
-        try {
-            return "OK: Reporte en " + diagnosticoService.generarReporteAltoRiesgo();
-        } catch (Exception e) {
-            return "ERROR: " + e.getMessage();
-        }
+    private String generarReporteAltoRiesgo() throws IOException {
+        String ruta = diagnosticoService.generarReporteAltoRiesgo();
+        return "OK: Reporte en " + ruta;
     }
 
-    private String generarReporteMutaciones(String payload) {
-        try {
-            return "OK: Reporte en " + diagnosticoService.generarReporteMutaciones(payload);
-        } catch (Exception e) {
-            return "ERROR: " + e.getMessage();
-        }
+    private String generarReporteMutaciones(String[] parts) throws MuestraNoEncontradaException, IOException {
+        if (parts.length < 2) return "ERROR: Documento requerido";
+
+        String ruta = diagnosticoService.generarReporteMutaciones(parts[1]);
+        return "OK: Reporte en " + ruta;
     }
 }

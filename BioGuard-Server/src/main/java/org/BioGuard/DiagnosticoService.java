@@ -1,40 +1,37 @@
 package org.BioGuard;
 
-/*
- * // Objetivo
- *    Servicio encargado de recibir secuencias (muestras) y realizar el
- *    diagnóstico genómico comparando con el catálogo viral. Se encarga de:
- *
- * // Responsabilidades
- *    - Validar la secuencia enviada
- *    - Guardar la muestra en `data/muestras/<documento>/`
- *    - Comparar la secuencia contra todos los virus registrados
- *    - Generar archivos CSV con los diagnósticos
- *    - Generar reportes (alto riesgo, mutaciones)
- */
-
 import org.BioGuard.exception.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
+/**
+ * Servicio para diagnóstico de muestras y generación de reportes.
+ *
+ * @author BioGuard Team
+ * @version 1.0
+ */
 public class DiagnosticoService {
 
     private static final String MUESTRAS_FOLDER = "data/muestras/";
     private static final String REPORTES_FOLDER = "data/reportes/";
 
-    private VirusService virusService;
-    private PacienteService pacienteService;
+    private final VirusService virusService;
+    private final PacienteService pacienteService;
 
     public DiagnosticoService() {
         this.virusService = new VirusService();
         this.pacienteService = new PacienteService();
+
+        // Crear directorios si no existen
         new File(MUESTRAS_FOLDER).mkdirs();
         new File(REPORTES_FOLDER).mkdirs();
+
+        System.out.println("[INFO] DiagnosticoService inicializado");
     }
 
     /**
-     * Realiza el diagnóstico de una muestra de ADN.
+     * Realiza diagnóstico de una muestra de ADN.
      *
      * @param documento Documento del paciente
      * @param fechaMuestra Fecha de la muestra
@@ -46,27 +43,34 @@ public class DiagnosticoService {
     public List<Diagnostico> diagnosticarMuestra(String documento, String fechaMuestra, String secuencia)
             throws DiagnosticoException, IOException {
 
+        System.out.println("[DEBUG] Diagnosticando muestra - Documento: " + documento);
+        System.out.println("[DEBUG] Fecha: " + fechaMuestra);
+        System.out.println("[DEBUG] Secuencia: " + secuencia);
+
         // Validar secuencia
         if (secuencia == null || secuencia.trim().isEmpty()) {
             throw new DiagnosticoException("La secuencia de ADN está vacía");
         }
 
         if (!secuencia.matches("^[ATCG]+$")) {
-            throw new DiagnosticoException("La secuencia contiene caracteres inválidos. Solo se permiten A, T, C, G");
+            throw new DiagnosticoException("La secuencia contiene caracteres inválidos. Solo se permiten A,T,C,G");
         }
 
         // Guardar la muestra
         String carpetaPaciente = MUESTRAS_FOLDER + documento + "/";
         Files.createDirectories(Paths.get(carpetaPaciente));
 
-        String nombreArchivo = fechaMuestra.replaceAll("[^0-9T]", "_") + ".fasta";
+        String nombreArchivo = fechaMuestra.replaceAll("[^0-9]", "_") + ".fasta";
         Path rutaMuestra = Paths.get(carpetaPaciente + nombreArchivo);
 
         String header = ">" + documento + "|" + fechaMuestra;
         Files.writeString(rutaMuestra, header + "\n" + secuencia + "\n");
+        System.out.println("[DEBUG] Muestra guardada en: " + rutaMuestra);
 
         // Cargar virus registrados
         List<Virus> virusRegistrados = virusService.cargarTodosLosVirus();
+        System.out.println("[DEBUG] Virus cargados: " + virusRegistrados.size());
+
         List<Diagnostico> diagnosticos = new ArrayList<>();
 
         // Buscar coincidencias
@@ -84,6 +88,8 @@ public class DiagnosticoService {
                         index,
                         index + secuenciaVirus.length() - 1
                 ));
+                System.out.println("[DEBUG] Virus detectado: " + virus.getNombre() +
+                        " en posición " + index);
                 index++;
             }
         }
@@ -96,11 +102,6 @@ public class DiagnosticoService {
 
     /**
      * Guarda los resultados del diagnóstico en un archivo CSV.
-     *
-     * @param documento Documento del paciente
-     * @param fechaMuestra Fecha de la muestra
-     * @param diagnosticos Lista de diagnósticos
-     * @throws IOException Si hay error de escritura
      */
     private void guardarResultadosDiagnostico(String documento, String fechaMuestra, List<Diagnostico> diagnosticos)
             throws IOException {
@@ -108,7 +109,7 @@ public class DiagnosticoService {
         String carpetaPaciente = MUESTRAS_FOLDER + documento + "/";
         Files.createDirectories(Paths.get(carpetaPaciente));
 
-        String nombreArchivo = "diagnostico_" + fechaMuestra.replaceAll("[^0-9T]", "_") + ".csv";
+        String nombreArchivo = "diagnostico_" + fechaMuestra.replaceAll("[^0-9]", "_") + ".csv";
         Path rutaResultado = Paths.get(carpetaPaciente + nombreArchivo);
 
         StringBuilder contenido = new StringBuilder();
@@ -119,119 +120,154 @@ public class DiagnosticoService {
         }
 
         Files.writeString(rutaResultado, contenido.toString());
+        System.out.println("[DEBUG] Resultados guardados en: " + rutaResultado);
     }
 
     /**
      * Genera reporte de pacientes de alto riesgo.
-     * Formato: documento, cantidad_virus_detectados, cantidad_virus_altamente_infecciosos,
-     *          lista_virus_normal, lista_virus_altamente_infecciosos
-     *
-     * @return Ruta del archivo generado
-     * @throws IOException Si hay error de E/S
+     * Formato: documento,cantidad_virus_detectados,cantidad_altamente,lista_normal,lista_altamente
      */
     public String generarReporteAltoRiesgo() throws IOException {
+        System.out.println("[DEBUG] ===== GENERANDO REPORTE ALTO RIESGO =====");
+
         String timestamp = String.valueOf(System.currentTimeMillis());
-        Path rutaReporte = Paths.get(REPORTES_FOLDER + "alto_riesgo_" + timestamp + ".csv");
+        String nombreReporte = "alto_riesgo_" + timestamp + ".csv";
+        Path rutaReporte = Paths.get(REPORTES_FOLDER + nombreReporte);
 
         List<Paciente> pacientes = pacienteService.listarTodos();
-        List<Virus> virusList = virusService.cargarTodosLosVirus();
+        System.out.println("[DEBUG] Total pacientes: " + pacientes.size());
 
-        // Mapa de virus por nombre para acceso rápido
+        if (pacientes.isEmpty()) {
+            Files.writeString(rutaReporte, "No hay pacientes registrados");
+            return "No hay pacientes registrados. Reporte vacío.";
+        }
+
+        List<Virus> virusList = virusService.cargarTodosLosVirus();
+        System.out.println("[DEBUG] Total virus: " + virusList.size());
+
+        if (virusList.isEmpty()) {
+            Files.writeString(rutaReporte, "No hay virus registrados");
+            return "No hay virus registrados. No se puede generar reporte.";
+        }
+
+        // Mapa de virus por nombre
         Map<String, Virus> mapaVirus = new HashMap<>();
         for (Virus v : virusList) {
             mapaVirus.put(v.getNombre(), v);
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("documento,cantidad_virus_detectados,cantidad_virus_altamente_infecciosos,lista_virus_normal,lista_virus_altamente_infecciosos\n");
+        sb.append("documento,cantidad_virus_detectados,cantidad_altamente,lista_normal,lista_altamente\n");
+
+        int pacientesAltoRiesgo = 0;
 
         for (Paciente p : pacientes) {
+            System.out.println("[DEBUG] Procesando paciente: " + p.getDocumento());
+
             // Obtener el último diagnóstico del paciente
-            File carpeta = new File(MUESTRAS_FOLDER + p.getDocumento() + "/");
-            if (!carpeta.exists()) continue;
+            List<Diagnostico> diagnosticos = obtenerUltimoDiagnostico(p.getDocumento());
 
-            File[] diagFiles = carpeta.listFiles((dir, name) -> name.startsWith("diagnostico_") && name.endsWith(".csv"));
-            if (diagFiles == null || diagFiles.length == 0) continue;
+            if (diagnosticos.isEmpty()) {
+                System.out.println("[DEBUG] Paciente sin diagnósticos: " + p.getDocumento());
+                continue;
+            }
 
-            // Tomar el más reciente
-            Arrays.sort(diagFiles, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
-
-            List<String> lineas = Files.readAllLines(diagFiles[0].toPath());
+            System.out.println("[DEBUG] Diagnósticos encontrados: " + diagnosticos.size());
 
             List<String> virusNormal = new ArrayList<>();
             List<String> virusAltamente = new ArrayList<>();
 
-            // Saltar cabecera (i=1)
-            for (int i = 1; i < lineas.size(); i++) {
-                String linea = lineas.get(i).trim();
-                if (linea.isEmpty()) continue;
-
-                String[] partes = linea.split(",");
-                if (partes.length >= 4) {
-                    String nombreVirus = partes[0];
-                    Virus v = mapaVirus.get(nombreVirus);
-
-                    if (v != null && "Altamente Infeccioso".equals(v.getNivelInfecciosidad())) {
-                        if (!virusAltamente.contains(nombreVirus)) {
-                            virusAltamente.add(nombreVirus);
+            for (Diagnostico d : diagnosticos) {
+                Virus v = mapaVirus.get(d.getNombreVirus());
+                if (v != null) {
+                    if ("Altamente Infeccioso".equals(v.getNivelInfecciosidad())) {
+                        if (!virusAltamente.contains(d.getNombreVirus())) {
+                            virusAltamente.add(d.getNombreVirus());
+                            System.out.println("[DEBUG] Virus altamente detectado: " + d.getNombreVirus());
                         }
                     } else {
-                        if (!virusNormal.contains(nombreVirus)) {
-                            virusNormal.add(nombreVirus);
+                        if (!virusNormal.contains(d.getNombreVirus())) {
+                            virusNormal.add(d.getNombreVirus());
                         }
                     }
                 }
             }
 
-            // Filtrar solo pacientes con más de 3 virus altamente infecciosos
+            // Filtrar pacientes con más de 3 virus altamente infecciosos
             if (virusAltamente.size() > 3) {
+                pacientesAltoRiesgo++;
                 sb.append(p.getDocumento()).append(",")
-                        .append(lineas.size() - 1).append(",")
+                        .append(diagnosticos.size()).append(",")
                         .append(virusAltamente.size()).append(",")
-                        .append(virusNormal).append(",")
-                        .append(virusAltamente).append("\n");
+                        .append(virusNormal.toString()).append(",")
+                        .append(virusAltamente.toString()).append("\n");
+
+                System.out.println("[DEBUG] PACIENTE ALTO RIESGO: " + p.getDocumento() +
+                        " - Altamente: " + virusAltamente.size());
             }
         }
 
+        if (pacientesAltoRiesgo == 0) {
+            String mensaje = "No se encontraron pacientes con más de 3 virus altamente infecciosos";
+            Files.writeString(rutaReporte, mensaje);
+            System.out.println("[INFO] " + mensaje);
+            return mensaje + ". Reporte vacío.";
+        }
+
         Files.writeString(rutaReporte, sb.toString());
-        return rutaReporte.toString();
+        System.out.println("[INFO] Reporte alto riesgo generado: " + rutaReporte.toAbsolutePath());
+        System.out.println("[INFO] Pacientes en reporte: " + pacientesAltoRiesgo);
+
+        return "OK: Reporte generado en " + rutaReporte.toString() +
+                " con " + pacientesAltoRiesgo + " pacientes de alto riesgo";
     }
 
     /**
      * Genera reporte de mutaciones para un paciente.
-     * Compara la muestra actual con todas las anteriores.
-     *
-     * @param documento Documento del paciente
-     * @return Ruta del archivo generado
-     * @throws MuestraNoEncontradaException Si no hay suficientes muestras
-     * @throws IOException Si hay error de E/S
      */
-    public String generarReporteMutaciones(String documento) throws MuestraNoEncontradaException, IOException {
+    public String generarReporteMutaciones(String documento)
+            throws MuestraNoEncontradaException, IOException {
+
+        System.out.println("[DEBUG] ===== GENERANDO REPORTE MUTACIONES =====");
+        System.out.println("[DEBUG] Documento: " + documento);
+
         File carpeta = new File(MUESTRAS_FOLDER + documento + "/");
+        System.out.println("[DEBUG] Buscando en carpeta: " + carpeta.getAbsolutePath());
+
         if (!carpeta.exists()) {
             throw new MuestraNoEncontradaException(documento);
         }
 
         File[] muestras = carpeta.listFiles((dir, name) -> name.endsWith(".fasta"));
         if (muestras == null || muestras.length < 2) {
-            throw new MuestraNoEncontradaException("Se necesitan al menos 2 muestras para detectar mutaciones");
+            return "No hay suficientes muestras para detectar mutaciones. Se necesitan al menos 2. Actual: " +
+                    (muestras != null ? muestras.length : 0);
         }
+
+        System.out.println("[DEBUG] Total muestras encontradas: " + muestras.length);
 
         // Ordenar por fecha (más reciente primero)
         Arrays.sort(muestras, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
 
         String timestamp = String.valueOf(System.currentTimeMillis());
-        Path rutaReporte = Paths.get(REPORTES_FOLDER + "mutaciones_" + documento + "_" + timestamp + ".csv");
+        String nombreReporte = "mutaciones_" + documento + "_" + timestamp + ".csv";
+        Path rutaReporte = Paths.get(REPORTES_FOLDER + nombreReporte);
 
         // Leer secuencia actual (la más reciente)
         String secuenciaActual = leerSecuenciaDeFasta(muestras[0]);
+        System.out.println("[DEBUG] Muestra actual: " + muestras[0].getName());
+        System.out.println("[DEBUG] Longitud secuencia actual: " + secuenciaActual.length());
 
         StringBuilder sb = new StringBuilder();
         sb.append("muestra_anterior,fecha_anterior,posicion_inicio,posicion_fin,tipo_cambio\n");
 
+        int totalMutaciones = 0;
+
         // Comparar con cada muestra anterior
         for (int i = 1; i < muestras.length; i++) {
             String secuenciaAnterior = leerSecuenciaDeFasta(muestras[i]);
+            System.out.println("[DEBUG] Comparando con: " + muestras[i].getName());
+            System.out.println("[DEBUG] Longitud secuencia anterior: " + secuenciaAnterior.length());
 
             int minLen = Math.min(secuenciaAnterior.length(), secuenciaActual.length());
 
@@ -256,40 +292,27 @@ public class DiagnosticoService {
                             .append(inicio).append(",")
                             .append(j - 1).append(",")
                             .append(tipo).append("\n");
+
+                    totalMutaciones++;
                 }
             }
         }
 
-        Files.writeString(rutaReporte, sb.toString());
-        return rutaReporte.toString();
-    }
-
-    /**
-     * Lee la secuencia de un archivo FASTA (ignorando headers).
-     *
-     * @param archivo El archivo a leer
-     * @return La secuencia de ADN
-     * @throws IOException Si hay error de lectura
-     */
-    private String leerSecuenciaDeFasta(File archivo) throws IOException {
-        List<String> lineas = Files.readAllLines(archivo.toPath());
-        StringBuilder secuencia = new StringBuilder();
-
-        for (String linea : lineas) {
-            if (!linea.startsWith(">")) {
-                secuencia.append(linea.trim());
-            }
+        if (totalMutaciones == 0) {
+            Files.writeString(rutaReporte, "No se detectaron mutaciones entre las muestras del paciente " + documento);
+            return "No se detectaron mutaciones. Reporte generado en: " + rutaReporte.toString();
         }
 
-        return secuencia.toString();
+        Files.writeString(rutaReporte, sb.toString());
+        System.out.println("[DEBUG] Total mutaciones detectadas: " + totalMutaciones);
+        System.out.println("[INFO] Reporte mutaciones generado: " + rutaReporte.toAbsolutePath());
+
+        return "OK: Reporte de mutaciones generado en " + rutaReporte.toString() +
+                " con " + totalMutaciones + " mutaciones detectadas";
     }
 
     /**
      * Obtiene el último diagnóstico de un paciente.
-     *
-     * @param documento Documento del paciente
-     * @return Lista de diagnósticos o lista vacía
-     * @throws IOException Si hay error de lectura
      */
     public List<Diagnostico> obtenerUltimoDiagnostico(String documento) throws IOException {
         File carpeta = new File(MUESTRAS_FOLDER + documento + "/");
@@ -297,7 +320,9 @@ public class DiagnosticoService {
             return Collections.emptyList();
         }
 
-        File[] diagFiles = carpeta.listFiles((dir, name) -> name.startsWith("diagnostico_") && name.endsWith(".csv"));
+        File[] diagFiles = carpeta.listFiles((dir, name) ->
+                name.startsWith("diagnostico_") && name.endsWith(".csv"));
+
         if (diagFiles == null || diagFiles.length == 0) {
             return Collections.emptyList();
         }
@@ -309,10 +334,6 @@ public class DiagnosticoService {
 
     /**
      * Lee diagnósticos desde un archivo CSV.
-     *
-     * @param archivo El archivo a leer
-     * @return Lista de diagnósticos
-     * @throws IOException Si hay error de lectura
      */
     private List<Diagnostico> leerDiagnosticosDeCSV(File archivo) throws IOException {
         List<Diagnostico> diagnosticos = new ArrayList<>();
@@ -335,5 +356,21 @@ public class DiagnosticoService {
         }
 
         return diagnosticos;
+    }
+
+    /**
+     * Lee la secuencia de un archivo FASTA.
+     */
+    private String leerSecuenciaDeFasta(File archivo) throws IOException {
+        List<String> lineas = Files.readAllLines(archivo.toPath());
+        StringBuilder secuencia = new StringBuilder();
+
+        for (String linea : lineas) {
+            if (!linea.startsWith(">")) {
+                secuencia.append(linea.trim());
+            }
+        }
+
+        return secuencia.toString();
     }
 }
