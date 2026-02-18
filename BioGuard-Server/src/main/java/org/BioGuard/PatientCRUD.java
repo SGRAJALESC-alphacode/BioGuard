@@ -2,7 +2,7 @@ package org.BioGuard;
 
 /*
  * // Objetivo
- *    Proveer utilidades de persistencia por paciente (almacenar/leer JSON en
+ *    Proveer utilidades de persistencia por paciente (almacenar/leer en
  *    `data/patients/patient_<document_id>.json`).
  *
  * // Responsabilidades

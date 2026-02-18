@@ -7,6 +7,27 @@ import java.util.Properties;
 
 /**
  * Punto de entrada del servidor BioGuard.
+ * Esta clase es responsable de inicializar y configurar todos los componentes
+ * del servidor antes de ponerlo en marcha.
+ *
+ * // Objetivo
+ *    Inicializar el servidor BioGuard, cargando la configuración necesaria,
+ *    estableciendo la seguridad SSL, creando la estructura de directorios
+ *    y finalmente arrancando el servidor TCP para atender clientes.
+ *
+ * // Proceso de inicialización
+ *    1. Cargar configuración desde archivo properties (búsqueda multi-ruta)
+ *    2. Configurar SSL con el certificado del servidor
+ *    3. Crear estructura de directorios necesaria (data/, logs/, etc.)
+ *    4. Iniciar el servidor TCP en el puerto configurado
+ *
+ * // Archivos de configuración
+ *    - config.properties: Archivo principal de configuración
+ *    - Ubicaciones de búsqueda: resources/, raíz, src/main/resources/
+ *
+ * // Atributos
+ *    CONFIG_FILE : Nombre del archivo de configuración
+ *    DEFAULT_PORT: Puerto por defecto si no se especifica en configuración
  *
  * @author BioGuard Team
  * @version 1.0
@@ -16,6 +37,28 @@ public class ServerMain {
     private static final String CONFIG_FILE = "config.properties";
     private static final int DEFAULT_PORT = 2021;
 
+    /**
+     * Método principal que inicia el servidor BioGuard.
+     *
+     * // Objetivo
+     *    Orquestar el proceso completo de inicialización del servidor:
+     *    - Mostrar información de depuración
+     *    - Cargar configuración
+     *    - Configurar SSL
+     *    - Crear directorios
+     *    - Iniciar servidor TCP
+     *
+     * // Flujo de ejecución
+     *    1. Imprimir banner de inicio
+     *    2. Mostrar información de ClassLoader y directorio actual
+     *    3. Cargar configuración (cargarConfiguracion)
+     *    4. Configurar SSL (configurarSSL)
+     *    5. Crear estructura de directorios (crearEstructuraDirectorios)
+     *    6. Iniciar servidor TCP en el puerto indicado
+     *    7. Capturar y manejar excepciones críticas
+     *
+     * @param args Argumentos de línea de comandos (no utilizados)
+     */
     public static void main(String[] args) {
         System.out.println("==========================================");
         System.out.println("    BIOGUARD - SISTEMA DE VIGILANCIA     ");
@@ -54,6 +97,25 @@ public class ServerMain {
 
     /**
      * Carga la configuración desde archivo properties.
+     *
+     * // Objetivo
+     *    Localizar y cargar el archivo de configuración del sistema,
+     *    buscando en múltiples ubicaciones para adaptarse a diferentes
+     *    entornos de ejecución (desarrollo, producción, IDE, línea de comandos).
+     *
+     * // Estrategia de búsqueda
+     *    1. Buscar en resources (classpath) - para ejecución desde JAR/IDE
+     *    2. Buscar en la raíz del proyecto - para ejecución directa
+     *    3. Buscar en src/main/resources - para estructura Maven
+     *    4. Si no encuentra, crear archivo por defecto
+     *
+     * // Validaciones
+     *    - Verificar que el archivo exista y sea legible
+     *    - Cargar las propiedades
+     *    - Mostrar valores cargados (sin contraseña)
+     *
+     * @return Properties con la configuración cargada
+     * @throws ConfiguracionException Si hay error crítico en la carga
      */
     private static Properties cargarConfiguracion() throws ConfiguracionException {
         Properties config = new Properties();
@@ -103,6 +165,12 @@ public class ServerMain {
 
     /**
      * Muestra la configuración cargada (sin contraseña)
+     *
+     * // Objetivo
+     *    Mostrar al usuario los valores de configuración cargados,
+     *    omitiendo información sensible como contraseñas.
+     *
+     * @param config Propiedades cargadas
      */
     private static void mostrarConfiguracion(Properties config) {
         System.out.println("[INFO] Puerto: " + config.getProperty("SERVER_PORT"));
@@ -111,6 +179,19 @@ public class ServerMain {
 
     /**
      * Crea archivo de configuración por defecto.
+     *
+     * // Objetivo
+     *    Generar un archivo de configuración básico con valores predeterminados
+     *    cuando no se encuentra ningún archivo existente.
+     *
+     * // Valores por defecto
+     *    SERVER_PORT=2021
+     *    SSL_CERTIFICATE_ROUTE=src/main/resources/certs/mi_clave.p12
+     *    SSL_PASSWORD=12345678
+     *    SSL_KEYSTORE_TYPE=PKCS12
+     *
+     * @return Properties con configuración por defecto
+     * @throws ConfiguracionException Si no se puede crear el archivo
      */
     private static Properties crearConfiguracionPorDefecto() throws ConfiguracionException {
         Properties config = new Properties();
@@ -133,6 +214,21 @@ public class ServerMain {
 
     /**
      * Configura SSL buscando el certificado en múltiples ubicaciones.
+     *
+     * // Objetivo
+     *    Establecer las propiedades del sistema necesarias para que
+     *    el servidor pueda utilizar SSL/TLS en las comunicaciones.
+     *
+     * // Proceso
+     *    1. Obtener ruta del certificado desde configuración
+     *    2. Buscar el certificado en múltiples ubicaciones
+     *    3. Configurar propiedades del sistema:
+     *       - javax.net.ssl.keyStore
+     *       - javax.net.ssl.keyStorePassword
+     *       - javax.net.ssl.keyStoreType
+     *
+     * @param config Configuración con datos SSL
+     * @throws ConfiguracionException Si no se encuentra el certificado
      */
     private static void configurarSSL(Properties config) throws ConfiguracionException {
         String certPath = config.getProperty("SSL_CERTIFICATE_ROUTE");
@@ -173,6 +269,21 @@ public class ServerMain {
 
     /**
      * Busca el certificado en múltiples ubicaciones.
+     *
+     * // Objetivo
+     *    Localizar el archivo de certificado SSL en diferentes
+     *    ubicaciones comunes para adaptarse a distintos entornos.
+     *
+     * // Rutas de búsqueda
+     *    1. Ruta exacta especificada en configuración
+     *    2. En resources (classpath)
+     *    3. src/main/resources/certs/mi_clave.p12
+     *    4. certs/mi_clave.p12 (raíz)
+     *    5. Ruta absoluta desde user.dir
+     *    6. Un nivel arriba (../certs)
+     *
+     * @param certPath Ruta original del certificado
+     * @return Archivo del certificado o null si no existe
      */
     private static File buscarCertificado(String certPath) {
         // 1. Ruta exacta del properties
@@ -230,6 +341,22 @@ public class ServerMain {
 
     /**
      * Crea la estructura de directorios necesaria.
+     *
+     * // Objetivo
+     *    Establecer la jerarquía de carpetas requerida por el sistema
+     *    para el almacenamiento de datos, logs y certificados.
+     *
+     * // Directorios creados
+     *    - data/               : Raíz de datos
+     *    - data/pacientes/     : Archivos CSV de pacientes
+     *    - data/virus/         : Archivos FASTA de virus
+     *    - data/muestras/      : Muestras de ADN por paciente
+     *    - data/reportes/      : Reportes generados
+     *    - logs/               : Archivos de log
+     *    - src/main/resources/certs/ : Certificados SSL
+     *
+     * // Archivos iniciales
+     *    - data/pacientes/pacientes.csv con cabecera
      */
     private static void crearEstructuraDirectorios() {
         String[] directorios = {
