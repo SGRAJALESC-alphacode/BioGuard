@@ -1,0 +1,13 @@
+{
+  "patient_id": "007",
+  "full_name": "Juan birgilio chamzazu",
+  "document_id": "203148",
+  "contact_email": "champasinibananini@correo.com",
+  "registration_date": "Sep 8, 2025, 2:28:06 AM",
+  "age": 56,
+  "sex": "M",
+  "clinical_notes": "data/adn/patient007.fasta",
+  "checksum_fasta": "MD5",
+  "file_size_bytes": 85,
+  "is_active": true
+}

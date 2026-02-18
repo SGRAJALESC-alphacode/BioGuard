@@ -4,7 +4,8 @@
   <component name="MavenProjectsManager">
     <option name="originalFiles">
       <list>
-        <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/BioGuard-Client/pom.xml" />
+        <option value="$PROJECT_DIR$/BioGuard-Server/pom.xml" />
       </list>
     </option>
   </component>
