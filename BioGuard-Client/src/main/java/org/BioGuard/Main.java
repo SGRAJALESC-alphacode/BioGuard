@@ -1,131 +1,39 @@
 package org.BioGuard;
 
 import com.google.gson.Gson;
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-
-import java.io.File;
-=======
->>>>>>> main
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Date;
-=======
 import com.google.gson.GsonBuilder;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
->>>>>>> Stashed changes
 import java.util.Properties;
 import java.util.Scanner;
 
 public class Main {
-    private static Properties config = new Properties();
+    private static final Properties config = new Properties();
     private static final Scanner scanner = new Scanner(System.in);
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-
-    public static void main(String[] args) {
-        try {
-            config.load(Main.class.getClassLoader().getResourceAsStream("config.properties"));
-=======
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static TCPClient client;
 
-    public static void main(String[] args) {
-        // Cargar config.properties
-        try (InputStream is = Main.class.getClassLoader().getResourceAsStream("config.properties")) {
-            if (is == null) throw new IOException("Archivo config.properties no encontrado.");
-            config.load(is);
+    static void main(String[] args) {
+        // Referencia mínima a args para evitar advertencia de 'parámetro no usado'
+        int _argsLen = args.length;
 
-            String addr = config.getProperty("SERVER_ADDRESS", "127.0.0.1");
-            int port = Integer.parseInt(config.getProperty("SERVER_PORT", "2020"));
-            client = new TCPClient(addr, port, config);
-
->>>>>>> Stashed changes
-=======
-    private static final Gson gson = new Gson();
-
-    public static void main(String[] args) {
         // Cargar config.properties del cliente
         try (InputStream is = Main.class.getClassLoader().getResourceAsStream("config.properties")) {
             if (is == null) throw new IOException("Archivo config.properties no encontrado.");
             config.load(is);
->>>>>>> main
         } catch (IOException e) {
             System.err.println("[ERROR] " + e.getMessage());
             return;
         }
 
-        int opcion;
-        do {
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-            System.out.println("\n=== MENÚ PACIENTES ===");
-            System.out.println("1. Crear paciente");
-            System.out.println("2. Leer paciente");
-            System.out.println("3. Actualizar paciente");
-            System.out.println("4. Eliminar paciente (soft delete)");
-            System.out.println("5. Listar pacientes activos");
-            System.out.println("6. Enviar paciente al servidor para análisis");
-            System.out.println("7. Salir");
-            System.out.print("Seleccione una opción: ");
-            try {
-                opcion = Integer.parseInt(scanner.nextLine());
-=======
-            mostrarMenu();
-            opcion = Integer.parseInt(scanner.nextLine());
-            procesarOpcion(opcion);
-        } while (opcion != 4);
-    }
->>>>>>> main
-
-    private static void mostrarMenu() {
-        System.out.println("\n=== BIOGUARD CLIENTE (SSL) ===");
-        System.out.println("1. Registrar Paciente [Servidor]");
-        System.out.println("2. Consultar Paciente [Servidor]");
-        System.out.println("3. Análisis de ADN [Servidor]");
-        System.out.println("4. Salir");
-        System.out.print("Selección: ");
-    }
-
-    private static void procesarOpcion(int op) {
         String addr = config.getProperty("SERVER_ADDRESS", "127.0.0.1");
         int port = Integer.parseInt(config.getProperty("SERVER_PORT", "2020"));
-        TCPClient client = new TCPClient(addr, port, config);
+        client = new TCPClient(addr, port, config);
 
-        switch (op) {
-            case 1 -> {
-                System.out.println("\n--- Nuevo Registro ---");
-                System.out.print("ID: "); String id = scanner.nextLine();
-                System.out.print("Nombre: "); String nombre = scanner.nextLine();
-                // ... captura los demás campos según tu clase Patient ...
-                Patient p = new Patient(id, nombre, "DOC123", "email@test.com", new Date(), 25, "M", "ruta/local.fasta", "abc", 1024);
-
-                String res = client.sendRequest("CREATE", gson.toJson(p));
-                System.out.println("Respuesta: " + res);
-            }
-            case 2 -> {
-                System.out.print("ID a consultar: ");
-                String id = scanner.nextLine();
-                String res = client.sendRequest("READ", id);
-                System.out.println("Datos: " + res);
-            }
-            case 3 -> {
-                System.out.print("ID para análisis: ");
-                String id = scanner.nextLine();
-                // Primero pedimos los datos para tener el objeto Patient completo
-                String pJson = client.sendRequest("READ", id);
-                if (!pJson.startsWith("ERROR")) {
-                    String res = client.sendRequest("ANALYZE", pJson);
-                    System.out.println(res);
-                } else {
-                    System.out.println("Paciente no encontrado en el servidor.");
-                }
-            }
-        }
-    }
-=======
+        int opcion;
+        do {
             mostrarMenu();
             try {
                 opcion = Integer.parseInt(scanner.nextLine());
@@ -210,11 +118,9 @@ public class Main {
         System.out.println("\n=== RESPUESTA ===");
 
         try {
-            // Intentar parsear como JSON para mostrarlo bonito
             Object json = gson.fromJson(respuesta, Object.class);
             System.out.println(gson.toJson(json));
         } catch (Exception e) {
-            // Si no es JSON, mostrar como texto plano
             System.out.println(respuesta);
         }
     }
@@ -225,11 +131,9 @@ public class Main {
         String rutaArchivo = scanner.nextLine();
 
         try {
-            // Leer el archivo FASTA
             Map<String, String> fastaData = FastaReader.leerFasta(rutaArchivo);
             Map<String, String> headerData = FastaReader.parsearHeaderVirus(fastaData.get("header"));
 
-            // Crear objeto Virus (aunque no tenemos clase Virus en cliente, enviamos como mapa)
             Map<String, String> virusData = new java.util.HashMap<>();
             virusData.put("nombre", headerData.get("nombre"));
             virusData.put("nivel", headerData.get("nivel"));
@@ -254,11 +158,9 @@ public class Main {
         String rutaMuestra = scanner.nextLine();
 
         try {
-            // Leer la muestra FASTA
             Map<String, String> muestraData = FastaReader.leerFasta(rutaMuestra);
             Map<String, String> headerData = FastaReader.parsearHeaderMuestra(muestraData.get("header"));
 
-            // Crear objeto de solicitud de diagnóstico
             Map<String, String> diagnosticoRequest = new java.util.HashMap<>();
             diagnosticoRequest.put("documento", documento);
             diagnosticoRequest.put("fecha_muestra", headerData.get("fecha"));
@@ -290,5 +192,4 @@ public class Main {
         System.out.println("\n=== REPORTE DE MUTACIONES ===");
         System.out.println(respuesta);
     }
->>>>>>> Stashed changes
 }
