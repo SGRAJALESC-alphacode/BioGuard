@@ -9,18 +9,19 @@ public class PatientHandler {
     private static final String DISEASES_FOLDER = "data/diseases/";
     private static final String RESULTS_FOLDER = "data/patients_results/";
 
-    public static List<String> processPatient(Patient patient) {
+    public static List<String> processPatient(Paciente paciente) {
         List<String> detectedViruses = new ArrayList<>();
         try {
             // REQUERIMIENTO: Organizar muestras en carpetas por ID de paciente
-            String patientSpecificDir = ADN_FOLDER + patient.getPatient_id() + "/";
+            String patientSpecificDir = ADN_FOLDER + paciente.getDocumento() + "/";
             File dir = new File(patientSpecificDir);
             if (!dir.exists()) dir.mkdirs();
 
-            // Asumiendo que la secuencia viene en clinical_notes o se lee del archivo
-            String patientDNA = readFastaFile(patient.getClinical_notes());
+            // Intentar leer la muestra asociada al paciente en data/muestras/paciente_<documento>.fasta
+            String samplePath = "data/muestras/paciente_" + paciente.getDocumento() + ".fasta";
+            String patientDNA = readFastaFile(samplePath);
 
-            // Comparar con catálogo viral (archivos FASTA) [cite: 10, 17]
+            // Comparar con catálogo viral (archivos FASTA)
             File diseasesDir = new File(DISEASES_FOLDER);
             File[] virusFiles = diseasesDir.listFiles((d, name) -> name.endsWith(".fasta"));
 
@@ -29,12 +30,12 @@ public class PatientHandler {
                     String virusDNA = readFastaFile(virusFile.getPath());
                     String virusName = virusFile.getName().replace(".fasta", "");
 
-                    if (patientDNA.contains(virusDNA)) {
+                    if (!virusDNA.isEmpty() && patientDNA.contains(virusDNA)) {
                         detectedViruses.add(virusName);
                     }
                 }
             }
-            savePatientResult(patient, detectedViruses);
+            savePatientResult(paciente, detectedViruses);
         } catch (IOException e) {
             System.err.println("[ERROR ANALISIS] " + e.getMessage());
         }
@@ -52,13 +53,13 @@ public class PatientHandler {
         return sb.toString();
     }
 
-    private static void savePatientResult(Patient patient, List<String> diseases) throws IOException {
+    private static void savePatientResult(Paciente paciente, List<String> diseases) throws IOException {
         File resDir = new File(RESULTS_FOLDER);
         if (!resDir.exists()) resDir.mkdirs();
 
-        String resultFile = RESULTS_FOLDER + "patient_" + patient.getPatient_id() + "_diag.csv";
+        String resultFile = RESULTS_FOLDER + "patient_" + paciente.getDocumento() + "_diag.csv";
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(resultFile))) {
-            // REQUERIMIENTO: Formato CSV para resultados [cite: 18]
+            // REQUERIMIENTO: Formato CSV para resultados
             bw.write("virus,resultado\n");
             if (diseases.isEmpty()) {
                 bw.write("NINGUNO,No detectado\n");

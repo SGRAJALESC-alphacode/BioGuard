@@ -12,28 +12,28 @@ public class PatientCRUD {
             .setPrettyPrinting()
             .create();
 
-    public static void createPatient(Patient patient) {
+    public static void createPatient(Paciente paciente) {
         try {
             File folder = new File(DATA_FOLDER);
             if (!folder.exists()) folder.mkdirs();
 
-            // Validación: No se permiten documentos duplicados [cite: 8]
-            File file = new File(DATA_FOLDER + "patient_" + patient.getPatient_id() + ".json");
+            // Validación: No se permiten documentos duplicados
+            File file = new File(DATA_FOLDER + "patient_" + paciente.getDocumento() + ".json");
             try (FileWriter writer = new FileWriter(file)) {
-                gson.toJson(patient, writer);
+                gson.toJson(paciente, writer);
             }
-            System.out.println("[CRUD] Paciente " + patient.getPatient_id() + " guardado exitosamente.");
+            System.out.println("[CRUD] Paciente " + paciente.getDocumento() + " guardado exitosamente.");
         } catch (IOException e) {
             System.err.println("[ERROR CRUD] " + e.getMessage());
         }
     }
 
-    public static Patient readPatient(String patientId) {
+    public static Paciente readPatient(String patientId) {
         File file = new File(DATA_FOLDER + "patient_" + patientId + ".json");
         if (!file.exists()) return null;
 
         try (FileReader reader = new FileReader(file)) {
-            return gson.fromJson(reader, Patient.class);
+            return gson.fromJson(reader, Paciente.class);
         } catch (IOException e) {
             return null;
         }

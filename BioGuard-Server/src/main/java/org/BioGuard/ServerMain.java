@@ -6,13 +6,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class ServerMain {
-    public static void main(String[] args) {
+    static void main(String[] args) {
+        if (args != null && args.length > 0) System.out.println("[INFO] ServerMain recibió " + args.length + " argumentos");
+
         Properties config = new Properties();
         try (InputStream is = ServerMain.class.getClassLoader().getResourceAsStream("config.properties")) {
             if (is == null) {
@@ -50,7 +49,7 @@ public class ServerMain {
 
         } catch (Exception e) {
             System.err.println("[ERROR CRÍTICO] " + e.getMessage());
-            e.printStackTrace();
+            if (e.getCause() != null) System.err.println("Causa: " + e.getCause());
         }
     }
 
@@ -66,8 +65,9 @@ public class ServerMain {
         for (String dir : directorios) {
             File folder = new File(dir);
             if (!folder.exists()) {
-                folder.mkdirs();
-                System.out.println("[INFO] Directorio creado: " + dir);
+                boolean ok = folder.mkdirs();
+                if (ok) System.out.println("[INFO] Directorio creado: " + dir);
+                else System.err.println("[WARN] No se pudo crear: " + dir);
             }
         }
 
@@ -75,10 +75,14 @@ public class ServerMain {
         File csvFile = new File("data/pacientes/pacientes.csv");
         if (!csvFile.exists()) {
             try {
-                csvFile.createNewFile();
-                // Escribir cabecera
-                Files.writeString(csvFile.toPath(),
-                        "documento,nombre,apellido,edad,correo,genero,ciudad,pais\n");
+                boolean created = csvFile.createNewFile();
+                if (created) {
+                    // Escribir cabecera
+                    Files.writeString(csvFile.toPath(), "documento,nombre,apellido,edad,correo,genero,ciudad,pais\n");
+                    System.out.println("[INFO] Archivo pacientes.csv creado");
+                } else {
+                    System.err.println("[WARN] No se pudo crear pacientes.csv");
+                }
             } catch (IOException e) {
                 System.err.println("[ERROR] No se pudo crear pacientes.csv");
             }
