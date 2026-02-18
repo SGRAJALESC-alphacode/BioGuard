@@ -1,5 +1,20 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Servicio encargado de la lógica de negocio relacionada con pacientes:
+ *    registro, consulta, listado y validaciones sobre `data/pacientes/pacientes.csv`.
+ *
+ * // Responsabilidades
+ *    - validar y registrar nuevos pacientes (evitar duplicados)
+ *    - consultar pacientes por documento
+ *    - listar todos los pacientes
+ *    - contar pacientes
+ *
+ * // Persistencia
+ *    Usa un CSV (`data/pacientes/pacientes.csv`) como almacenamiento principal.
+ */
+
 import org.BioGuard.exception.PacienteDuplicadoException;
 import java.io.*;
 import java.nio.file.*;

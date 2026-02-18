@@ -1,5 +1,18 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Punto de entrada canónico para arrancar el servidor BioGuard: carga
+ *    configuración (incluyendo certificados SSL), inicializa directorios
+ *    y arranca el `TCPServer`.
+ *
+ * // Comportamiento
+ *    - Lee `config.properties` desde resources
+ *    - Configura propiedades SSL (keystore/truststore)
+ *    - Inicializa carpetas necesarias bajo `data/`
+ *    - Crea e inicia un `TCPServer` en el puerto configurado
+ */
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

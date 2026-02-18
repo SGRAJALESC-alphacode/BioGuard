@@ -1,5 +1,16 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Servicio responsable de la gestión del catálogo de virus: validación,
+ *    almacenamiento en archivos FASTA y lectura de virus registrados.
+ *
+ * // Responsabilidades
+ *    - validar datos de virus recibidos (nombre, nivel, secuencia)
+ *    - guardar virus en `data/virus/` como archivos FASTA
+ *    - cargar todos los virus registrados para su uso en diagnósticos
+ */
+
 import org.BioGuard.exception.FormatoFastaInvalidoException;
 import java.io.*;
 import java.nio.file.*;

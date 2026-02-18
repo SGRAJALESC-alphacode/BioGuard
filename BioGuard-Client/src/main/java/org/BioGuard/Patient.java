@@ -1,5 +1,21 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Modelo que representa un paciente en el cliente: contiene la información
+ *    personal mínima necesaria para el registro y la comunicación con el servidor.
+ *
+ * // Atributos
+ *    documento : Identificador único del paciente (document_id)
+ *    nombre    : Nombre
+ *    apellido  : Apellido
+ *    edad      : Edad
+ *    correo    : Correo electrónico de contacto
+ *    genero    : Género (M/F/Otro)
+ *    ciudad    : Ciudad
+ *    pais      : País
+ */
+
 public class Patient {
     private String documento;      // Identificador único
     private String nombre;

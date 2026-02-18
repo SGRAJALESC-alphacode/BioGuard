@@ -1,5 +1,23 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Proveer una capa cliente para conectarse al `BioGuard-Server` mediante
+ *    TLS/SSL, enviar peticiones en formato `COMANDO|PAYLOAD` y leer respuestas.
+ *
+ * // Atributos
+ *    serverAddress     : Dirección del servidor (String)
+ *    serverPort        : Puerto del servidor (int)
+ *    clientSocket      : Socket SSL utilizado para la conexión (Socket)
+ *    dataInputStream   : Stream de lectura para respuestas (DataInputStream)
+ *    dataOutputStream  : Stream de escritura para requests (DataOutputStream)
+ *
+ * // Comportamiento
+ *    connect()         : Configura SSL a partir de recursos y abre la conexión
+ *    sendRequest()     : Envía `COMANDO|payload` y devuelve la respuesta del servidor
+ *    closeConnection() : Cierra streams y socket
+ */
+
 import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

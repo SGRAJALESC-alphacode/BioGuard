@@ -1,5 +1,15 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Proveer utilidades de persistencia por paciente (almacenar/leer JSON en
+ *    `data/patients/patient_<document_id>.json`).
+ *
+ * // Responsabilidades
+ *    - serializar/deserializar objetos `Paciente` a/desde JSON
+ *    - ofrecer métodos create/read para operaciones rápidas
+ */
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.*;

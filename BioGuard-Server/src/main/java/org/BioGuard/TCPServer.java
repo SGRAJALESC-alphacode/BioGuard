@@ -1,5 +1,21 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Escuchar conexiones entrantes TLS/SSL en un puerto configurado y delegar
+ *    cada conexión a un `ClientHandler` para procesar comandos. Gestiona un
+ *    pool de hilos para concurrencia.
+ *
+ * // Atributos
+ *    serverPort : Puerto en el que escucha el servidor (int)
+ *    threadPool : ExecutorService para manejar concurrencia
+ *
+ * // Comportamiento
+ *    start() : Inicializa el SSLServerSocket, imprime info de estado y entra
+ *              en un loop de aceptación; por cada cliente crea un ClientHandler
+ *              y lo envía al pool de hilos.
+ */
+
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;

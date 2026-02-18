@@ -1,5 +1,18 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Servicio encargado de recibir secuencias (muestras) y realizar el
+ *    diagnóstico genómico comparando con el catálogo viral. Se encarga de:
+ *
+ * // Responsabilidades
+ *    - Validar la secuencia enviada
+ *    - Guardar la muestra en `data/muestras/<documento>/`
+ *    - Comparar la secuencia contra todos los virus registrados
+ *    - Generar archivos CSV con los diagnósticos
+ *    - Generar reportes (alto riesgo, mutaciones)
+ */
+
 import org.BioGuard.exception.*;
 import java.io.*;
 import java.nio.file.*;

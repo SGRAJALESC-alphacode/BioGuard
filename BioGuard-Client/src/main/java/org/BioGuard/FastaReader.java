@@ -1,5 +1,16 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Leer y parsear archivos FASTA (tanto virus como muestras) y extraer
+ *    los metadatos del header y la secuencia concatenada.
+ *
+ * // Funciones principales
+ *    leerFasta(ruta): Lee un archivo FASTA y devuelve un mapa con "header" y "secuencia".
+ *    parsearHeaderVirus(header): Parsea headers con formato nombre|nivel.
+ *    parsearHeaderMuestra(header): Parsea headers con formato documento|fecha.
+ */
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -1,5 +1,18 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Cliente de consola interactivo que permite al usuario final realizar
+ *    operaciones contra el servidor BioGuard (registro de pacientes, consulta,
+ *    carga de virus, diagnóstico y generación de reportes).
+ *
+ * // Comportamiento
+ *    - Cargar `config.properties` para obtener dirección/puerto y SSL
+ *    - Presentar un menú por consola
+ *    - Serializar payloads con Gson y enviar en formato COMANDO|payload
+ *    - Mostrar la respuesta del servidor (JSON o texto)
+ */
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 

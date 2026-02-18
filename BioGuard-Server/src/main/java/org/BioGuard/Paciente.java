@@ -1,5 +1,23 @@
 package org.BioGuard;
 
+/*
+ *  // Objetivo
+ *     Representar un paciente en el sistema con toda su información personal y clínica.
+ *
+ *  // Atributos
+ *     patient_id       : Identificador único del paciente.
+ *     full_name        : Nombre completo del paciente.
+ *     document_id      : Documento de identidad del paciente.
+ *     contact_email    : Correo electrónico de contacto.
+ *     registration_date: Fecha de registro del paciente en el sistema.
+ *     age              : Edad del paciente.
+ *     sex              : Sexo del paciente (M/F).
+ *     clinical_notes   : Ruta del archivo FASTA asociado al paciente.
+ *     checksum_fasta   : Checksum del archivo FASTA para validación.
+ *     file_size_bytes  : Tamaño del archivo FASTA en bytes.
+ *     is_active        : Indica si el paciente está activo (soft delete).
+ */
+
 public class Paciente {
     private String documento;
     private String nombre;

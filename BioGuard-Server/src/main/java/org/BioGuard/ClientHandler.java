@@ -1,5 +1,25 @@
 package org.BioGuard;
 
+/*
+ * // Objetivo
+ *    Gestionar una conexión de cliente en el servidor: leer solicitudes en formato
+ *    COMANDO|PAYLOAD, despachar a los servicios correspondientes y devolver la
+ *    respuesta por el socket SSL.
+ *
+ * // Atributos principales
+ *    socket             : SSLSocket que representa la conexión cliente-servidor.
+ *    gson               : Gson para serializar/deserializar JSON.
+ *    pacienteService    : Servicio para operaciones sobre pacientes (registro, consulta).
+ *    virusService       : Servicio para operaciones sobre virus (guardar, cargar).
+ *    diagnosticoService : Servicio para diagnóstico de muestras y generación de reportes.
+ *
+ * // Comportamiento / métodos
+ *    run()              : Ciclo de vida del handler; lee request, parsea comando y payload,
+ *                         delega al método procesarComando() y escribe la respuesta.
+ *    procesarComando()  : Dispatchea comandos como REGISTRAR_PACIENTE, CONSULTAR_PACIENTE,
+ *                         CARGAR_VIRUS, DIAGNOSTICAR, REPORTE_ALTO_RIESGO, REPORTE_MUTACIONES.
+ */
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.BioGuard.exception.*;
