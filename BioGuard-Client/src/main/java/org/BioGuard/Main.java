@@ -1,7 +1,6 @@
 package org.BioGuard;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -16,7 +15,6 @@ public class Main {
     public static void main(String[] args) {
         // Cargar configuración
         try {
-            // Intentar cargar desde archivo en el directorio actual
             java.io.File localConfig = new java.io.File("config.properties");
             if (localConfig.exists()) {
                 try (java.io.FileInputStream fis = new java.io.FileInputStream(localConfig)) {
@@ -24,8 +22,7 @@ public class Main {
                     System.out.println("[INFO] Configuración cargada desde: config.properties");
                 }
             } else {
-                // Intentar desde resources
-                try (InputStream is = Main.class.getClassLoader().getResourceAsStream("config.properties")) {
+                try (java.io.InputStream is = Main.class.getClassLoader().getResourceAsStream("config.properties")) {
                     if (is == null) {
                         throw new IOException("Archivo config.properties no encontrado");
                     }
@@ -37,11 +34,11 @@ public class Main {
             System.err.println("[ERROR] No se pudo cargar configuración: " + e.getMessage());
             System.err.println("[INFO] Usando valores por defecto");
             config.setProperty("SERVER_ADDRESS", "127.0.0.1");
-            config.setProperty("SERVER_PORT", "2020");
+            config.setProperty("SERVER_PORT", "2021");
         }
 
         String addr = config.getProperty("SERVER_ADDRESS", "127.0.0.1");
-        int port = Integer.parseInt(config.getProperty("SERVER_PORT", "2020"));
+        int port = Integer.parseInt(config.getProperty("SERVER_PORT", "2021"));
         client = new TCPClient(addr, port, config);
 
         System.out.println("=== BIOGUARD CLIENTE ===");
@@ -134,13 +131,25 @@ public class Main {
         String ruta = scanner.nextLine();
 
         try {
-            String[] virusData = leerFastaVirus(ruta);
+            String[] virusData = leerArchivoVirus(ruta);
             if (virusData == null) {
                 System.out.println("ERROR: Formato FASTA inválido");
                 return;
             }
 
-            String payload = virusData[0] + "|" + virusData[1] + "|" + virusData[2];
+            String nombre = virusData[0];
+            String nivel = virusData[1];
+            String secuencia = virusData[2];
+
+            // Validar secuencia
+            if (!secuencia.matches("^[ATCG]+$")) {
+                System.out.println("ERROR: La secuencia contiene caracteres inválidos");
+                return;
+            }
+
+            String payload = nombre + "|" + nivel + "|" + secuencia;
+            System.out.println("[DEBUG] Enviando: CARGAR_VIRUS|" + nombre + "|" + nivel + "|" + secuencia);
+
             String respuesta = client.sendRequest("CARGAR_VIRUS", payload);
             System.out.println("\nRESPUESTA: " + respuesta);
 
@@ -149,27 +158,63 @@ public class Main {
         }
     }
 
+    /**
+     * MÉTODO CORREGIDO - Diagnóstico de muestra
+     * Ahora envía SOLO headerCompleto|secuencia, sin duplicar el documento
+     */
     private static void diagnosticarMuestra() {
         System.out.println("\n--- DIAGNÓSTICO DE MUESTRA ---");
         System.out.print("Documento del paciente: ");
-        String documento = scanner.nextLine();
+        String documentoIngresado = scanner.nextLine();
 
-        System.out.print("Ruta del archivo FASTA: ");
-        String ruta = scanner.nextLine();
+        System.out.print("Ruta del archivo FASTA de la muestra: ");
+        String rutaMuestra = scanner.nextLine();
 
         try {
-            String[] muestraData = leerFastaMuestra(ruta);
+            String[] muestraData = leerArchivoMuestraConDepuracion(rutaMuestra);
+
             if (muestraData == null) {
-                System.out.println("ERROR: Formato FASTA inválido");
+                System.out.println("ERROR: No se pudo leer el archivo correctamente");
                 return;
             }
 
-            String payload = documento + "|" + muestraData[0] + "|" + muestraData[1];
+            String headerCompleto = muestraData[0]; // "documento|fecha"
+            String secuencia = muestraData[1];
+
+            // Validar que el documento del header coincide con el ingresado
+            String[] partesHeader = headerCompleto.split("\\|");
+            if (partesHeader.length < 2) {
+                System.out.println("ERROR: Formato de header inválido. Debe ser: documento|fecha");
+                return;
+            }
+
+            String documentoHeader = partesHeader[0];
+            String fecha = partesHeader[1];
+
+            if (!documentoHeader.equals(documentoIngresado)) {
+                System.out.println("ERROR: El documento del archivo (" + documentoHeader +
+                        ") no coincide con el ingresado (" + documentoIngresado + ")");
+                return;
+            }
+
+            // Validar secuencia
+            if (!secuencia.matches("^[ATCG]+$")) {
+                System.out.println("ERROR: La secuencia contiene caracteres inválidos");
+                return;
+            }
+
+            // CORREGIDO: Enviar SOLO headerCompleto + secuencia (sin duplicar documento)
+            // El servidor espera: DIAGNOSTICAR|documento|fecha|secuencia
+            String payload = documentoHeader + "|" + fecha + "|" + secuencia;
+
+            System.out.println("[DEBUG] Enviando: DIAGNOSTICAR|" + payload);
+
             String respuesta = client.sendRequest("DIAGNOSTICAR", payload);
-            System.out.println("\nRESPUESTA: " + respuesta);
+            System.out.println("\n=== RESPUESTA ===");
+            System.out.println(respuesta);
 
         } catch (IOException e) {
-            System.out.println("ERROR: No se pudo leer el archivo - " + e.getMessage());
+            System.err.println("Error al leer el archivo: " + e.getMessage());
         }
     }
 
@@ -188,7 +233,11 @@ public class Main {
         System.out.println("\nRESPUESTA: " + respuesta);
     }
 
-    private static String[] leerFastaVirus(String ruta) throws IOException {
+    /**
+     * Lee un archivo FASTA de virus.
+     * Formato esperado: >nombre_virus|nivel\n secuencia
+     */
+    private static String[] leerArchivoVirus(String ruta) throws IOException {
         List<String> lineas = Files.readAllLines(Paths.get(ruta));
         if (lineas.isEmpty()) return null;
 
@@ -208,26 +257,61 @@ public class Main {
         return new String[]{nombre, nivel, secuencia.toString()};
     }
 
-    private static String[] leerFastaMuestra(String ruta) throws IOException {
+    /**
+     * Lee un archivo FASTA de muestra con depuración.
+     * Formato esperado: >documento|fecha\n secuencia
+     */
+    private static String[] leerArchivoMuestraConDepuracion(String ruta) throws IOException {
         List<String> lineas = Files.readAllLines(Paths.get(ruta));
-        if (lineas.isEmpty()) return null;
+        if (lineas.isEmpty()) {
+            System.out.println("ERROR: Archivo vacío");
+            return null;
+        }
 
-        String header = lineas.get(0).trim();
-        if (!header.startsWith(">")) return null;
+        // Mostrar información de depuración
+        System.out.println("\n[DEBUG] ===== INFORMACIÓN DEL ARCHIVO =====");
+        System.out.println("[DEBUG] Ruta: " + ruta);
+        System.out.println("[DEBUG] Total líneas: " + lineas.size());
 
-        String fechaCompleta = header.substring(1); // documento|fecha
+        for (int i = 0; i < Math.min(3, lineas.size()); i++) {
+            String linea = lineas.get(i);
+            System.out.println("[DEBUG] Línea " + i + ": '" + linea + "'");
+            System.out.println("[DEBUG] Longitud: " + linea.length());
+        }
 
+        // Procesar primera línea
+        String primeraLinea = lineas.get(0);
+        String header = primeraLinea.trim();
+
+        if (!header.startsWith(">")) {
+            System.out.println("ERROR: La primera línea debe comenzar con '>'");
+            System.out.println("Contenido: '" + primeraLinea + "'");
+            return null;
+        }
+
+        // Extraer header (todo después del '>')
+        String headerCompleto = header.substring(1).trim();
+        System.out.println("[DEBUG] Header extraído: '" + headerCompleto + "'");
+
+        // Procesar secuencia
         StringBuilder secuencia = new StringBuilder();
         for (int i = 1; i < lineas.size(); i++) {
-            secuencia.append(lineas.get(i).trim());
+            String linea = lineas.get(i).trim();
+            if (!linea.isEmpty() && !linea.startsWith(">")) {
+                secuencia.append(linea);
+            }
         }
 
-        // Validar secuencia
-        String secStr = secuencia.toString();
-        if (!secStr.matches("^[ATCG]+$")) {
-            throw new IOException("La secuencia contiene caracteres inválidos. Solo se permiten A,T,C,G");
+        String secuenciaStr = secuencia.toString();
+        System.out.println("[DEBUG] Secuencia encontrada: '" + secuenciaStr + "'");
+        System.out.println("[DEBUG] Longitud secuencia: " + secuenciaStr.length());
+        System.out.println("[DEBUG] ===== FIN DEPURACIÓN =====\n");
+
+        if (secuenciaStr.isEmpty()) {
+            System.out.println("ERROR: No se encontró secuencia en el archivo");
+            return null;
         }
 
-        return new String[]{fechaCompleta, secStr};
+        return new String[]{headerCompleto, secuenciaStr};
     }
 }

@@ -262,9 +262,10 @@ public class ClientHandler implements Runnable {
 
         if (resultados.isEmpty()) return "RESULTADO: No se detectaron virus";
 
-        StringBuilder sb = new StringBuilder("RESULTADO:");
-        for (Diagnostico d : resultados) {
-            sb.append("|").append(d.toString());
+        // Construir respuesta legible
+        StringBuilder sb = new StringBuilder("RESULTADO:\n");
+        for (int i = 0; i < resultados.size(); i++) {
+            sb.append(i + 1).append(". ").append(resultados.get(i).toString()).append("\n");
         }
         return sb.toString();
     }

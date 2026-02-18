@@ -1,30 +1,85 @@
 package org.BioGuard;
 
-/*
- * // Objetivo
- *    Representar un hallazgo (diagnóstico) dentro de una muestra de ADN: qué virus
- *    fue detectado, su nivel de infecciosidad y la posición dentro de la secuencia.
+/**
+ * Representa el resultado de un diagnóstico de ADN.
  *
- * // Atributos
- *    virus : Nombre del virus detectado (String)
- *    nivel : Nivel de infecciosidad (String) - p.ej. "Normal" / "Altamente Infeccioso"
- *    inicio: Posición de inicio en la secuencia donde se detectó el virus (int)
- *    fin   : Posición de final en la secuencia donde se detectó el virus (int)
+ * // Objetivo
+ *    Almacenar la información de un virus detectado en una muestra:
+ *    nombre del virus, nivel de infecciosidad y posición en la secuencia.
  */
-
 public class Diagnostico {
-    private String virus;
-    private String nivel;
-    private int inicio;
-    private int fin;
 
-    public Diagnostico(String virus, String nivel, int inicio, int fin) {
-        this.virus = virus;
-        this.nivel = nivel;
-        this.inicio = inicio;
-        this.fin = fin;
+    private final String nombreVirus;
+    private final String nivelInfecciosidad;
+    private final int posicionInicio;
+    private final int posicionFin;
+
+    /**
+     * Constructor completo.
+     *
+     * @param nombreVirus Nombre del virus detectado
+     * @param nivelInfecciosidad Nivel de infecciosidad
+     * @param posicionInicio Posición inicial en la secuencia
+     * @param posicionFin Posición final en la secuencia
+     */
+    public Diagnostico(String nombreVirus, String nivelInfecciosidad, int posicionInicio, int posicionFin) {
+        this.nombreVirus = nombreVirus;
+        this.nivelInfecciosidad = nivelInfecciosidad;
+        this.posicionInicio = posicionInicio;
+        this.posicionFin = posicionFin;
     }
 
-    public String getNombreVirus() { return virus; }
-    public String toCsvString() { return virus + "," + nivel + "," + inicio + "," + fin; }
+    /**
+     * Obtiene el nombre del virus.
+     */
+    public String getNombreVirus() {
+        return nombreVirus;
+    }
+
+    /**
+     * Obtiene el nivel de infecciosidad.
+     */
+    public String getNivelInfecciosidad() {
+        return nivelInfecciosidad;
+    }
+
+    /**
+     * Obtiene la posición inicial.
+     */
+    public int getPosicionInicio() {
+        return posicionInicio;
+    }
+
+    /**
+     * Obtiene la posición final.
+     */
+    public int getPosicionFin() {
+        return posicionFin;
+    }
+
+    /**
+     * Convierte a formato CSV.
+     */
+    public String toCsvString() {
+        return String.join(",",
+                nombreVirus,
+                nivelInfecciosidad,
+                String.valueOf(posicionInicio),
+                String.valueOf(posicionFin)
+        );
+    }
+
+    /**
+     * Representación en String del diagnóstico.
+     * Este método es el que se muestra en la respuesta del cliente.
+     */
+    @Override
+    public String toString() {
+        return String.format("%s [%s] - Posición: %d - %d",
+                nombreVirus,
+                nivelInfecciosidad,
+                posicionInicio,
+                posicionFin
+        );
+    }
 }
