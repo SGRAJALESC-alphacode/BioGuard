@@ -1,6 +1,0 @@
-Paciente ID: 006
-Nombre: Josue calvo calvisimo
-Documento: 10568974
-Edad: 39
-Archivo FASTA: data/adn/patient006.fasta
-Enfermedades detectadas: Ninguna

@@ -1,9 +1,12 @@
 package org.BioGuard.model;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Modelo que representa un diagnóstico médico en el sistema BioGuard.
+ * Modelo que representa un diagnóstico médico.
  *
  * @author Sergio Grajales
  * @author Jhonatan Tamayo
@@ -12,33 +15,76 @@ import java.time.LocalDateTime;
 public class Diagnostico {
 
     private String id;
-    private Paciente paciente;
-    private String sintomas;
-    private String resultado;
+    private String documentoPaciente;
+    private String idMuestra;
+    private List<HallazgoVirus> virusDetectados;
     private LocalDateTime fecha;
 
-    public Diagnostico() {}
-
-    public Diagnostico(String id, Paciente paciente, String sintomas, String resultado, LocalDateTime fecha) {
-        this.id = id;
-        this.paciente = paciente;
-        this.sintomas = sintomas;
-        this.resultado = resultado;
-        this.fecha = fecha;
+    public Diagnostico() {
+        this.virusDetectados = new ArrayList<>();
     }
 
+    public Diagnostico(String documentoPaciente, String idMuestra) {
+        this.documentoPaciente = documentoPaciente;
+        this.idMuestra = idMuestra;
+        this.virusDetectados = new ArrayList<>();
+        this.fecha = LocalDateTime.now();
+        this.id = generarId();
+    }
+
+    private String generarId() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss.SSS");
+        return documentoPaciente + "_" + fecha.format(formatter);
+    }
+
+    // Getters y Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
-    public Paciente getPaciente() { return paciente; }
-    public void setPaciente(Paciente paciente) { this.paciente = paciente; }
+    public String getDocumentoPaciente() { return documentoPaciente; }
+    public void setDocumentoPaciente(String documentoPaciente) {
+        this.documentoPaciente = documentoPaciente;
+    }
 
-    public String getSintomas() { return sintomas; }
-    public void setSintomas(String sintomas) { this.sintomas = sintomas; }
+    public String getIdMuestra() { return idMuestra; }
+    public void setIdMuestra(String idMuestra) { this.idMuestra = idMuestra; }
 
-    public String getResultado() { return resultado; }
-    public void setResultado(String resultado) { this.resultado = resultado; }
+    public List<HallazgoVirus> getVirusDetectados() { return virusDetectados; }
+    public void setVirusDetectados(List<HallazgoVirus> virusDetectados) {
+        this.virusDetectados = virusDetectados;
+    }
 
     public LocalDateTime getFecha() { return fecha; }
     public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
+
+    /**
+     * Agrega un virus detectado al diagnóstico.
+     */
+    public void agregarHallazgo(HallazgoVirus hallazgo) {
+        this.virusDetectados.add(hallazgo);
+    }
+
+    /**
+     * Clase interna para representar un hallazgo de virus.
+     */
+    public static class HallazgoVirus {
+        private String nombreVirus;
+        private int posicionInicio;
+        private int posicionFin;
+
+        public HallazgoVirus(String nombreVirus, int posicionInicio, int posicionFin) {
+            this.nombreVirus = nombreVirus;
+            this.posicionInicio = posicionInicio;
+            this.posicionFin = posicionFin;
+        }
+
+        public String getNombreVirus() { return nombreVirus; }
+        public int getPosicionInicio() { return posicionInicio; }
+        public int getPosicionFin() { return posicionFin; }
+
+        @Override
+        public String toString() {
+            return nombreVirus + "," + posicionInicio + "," + posicionFin;
+        }
+    }
 }
