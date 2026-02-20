@@ -7,13 +7,6 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
-/**
- * Lector de archivos FASTA que convierte a objetos Patient.
- *
- * @author Sergio Grajales
- * @author Jhonatan Tamayo
- * @version 1.0
- */
 public class FastaReader implements IFileReader<Patient> {
 
     private final FastaLineParser parser;

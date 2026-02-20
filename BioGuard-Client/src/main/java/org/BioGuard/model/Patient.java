@@ -1,12 +1,5 @@
 package org.BioGuard.model;
 
-/**
- * Modelo que representa un paciente en el sistema BioGuard.
- *
- * @author Sergio Grajales
- * @author Jhonatan Tamayo
- * @version 1.0
- */
 public class Patient {
 
     private String id;
@@ -25,7 +18,6 @@ public class Patient {
         this.telefono = telefono;
     }
 
-    // Getters y Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

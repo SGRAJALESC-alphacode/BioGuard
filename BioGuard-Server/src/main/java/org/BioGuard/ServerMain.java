@@ -7,48 +7,42 @@ import org.BioGuard.network.server.TCPServer;
 import org.BioGuard.handler.IMessageProcessor;
 import org.BioGuard.handler.MessageHandler;
 import org.BioGuard.service.*;
-import org.BioGuard.exception.ConfigurationException;
 
-/**
- * Clase principal para iniciar el servidor BioGuard.
- *
- * @author Sergio Grajales
- * @author Jhonatan Tamayo
- * @version 1.0
- */
 public class ServerMain {
 
     private static final int PUERTO = 8080;
 
     public static void main(String[] args) {
+        System.out.println("╔════════════════════════════════════╗");
+        System.out.println("║     SERVIDOR BioGuard v1.0        ║");
+        System.out.println("╚════════════════════════════════════╝");
+
         try {
-            // 1. Crear servicios
-            System.out.println("Inicializando servicios...");
+            // Inicializar servicios
+            System.out.println("\n Inicializando servicios...");
             IPacienteService pacienteService = new PacienteService();
             IDiagnosticoService diagnosticoService = new DiagnosticoService();
             IVirusService virusService = new VirusService();
 
-            // 2. Crear procesador de mensajes
+            // Crear procesador
             IMessageProcessor messageProcessor = new MessageHandler(
                     pacienteService,
                     diagnosticoService,
                     virusService
             );
 
-            // 3. Crear protocolo
+            // Crear protocolo
             IMessageProtocol protocol = new LengthPrefixedProtocol();
 
-            // 4. Crear e iniciar servidor
+            // Crear servidor
             ITCPServer server = new TCPServer(PUERTO, protocol, messageProcessor);
 
-            // 5. Iniciar servidor (bloqueante)
+            // Iniciar servidor
+            System.out.println("\nIniciando servidor en puerto " + PUERTO + "...");
             server.start();
 
-        } catch (ConfigurationException e) {
-            System.err.println("Error de configuración: " + e.getMessage());
-            e.printStackTrace();
         } catch (Exception e) {
-            System.err.println("Error inesperado: " + e.getMessage());
+            System.err.println("\nError: " + e.getMessage());
             e.printStackTrace();
         }
     }
