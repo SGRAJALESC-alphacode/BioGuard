@@ -17,9 +17,6 @@ public class SSLClient implements ITCPClient {
     private volatile boolean connected = false;
 
     public SSLClient(ClientConfig config, IMessageProtocol protocol) {
-        if (config == null) throw new IllegalArgumentException("Config no puede ser null");
-        if (protocol == null) throw new IllegalArgumentException("Protocol no puede ser null");
-
         this.config = config;
         this.protocol = protocol;
     }
@@ -69,26 +66,9 @@ public class SSLClient implements ITCPClient {
         }
 
         try {
-            // Enviar mensaje
             protocol.encode(message, out);
-
-            // Recibir respuesta
             String response = protocol.decode(in);
-
-            // Verificar si la respuesta indica que el servidor cerrará
-            if (response.startsWith("PACIENTE_REGISTRADO") ||
-                    response.startsWith("DIAGNOSTICO") ||
-                    response.startsWith("ERROR")) {
-                // Respuesta normal, la conexión sigue abierta
-                return response;
-            }
-
             return response;
-
-        } catch (EOFException e) {
-            // El servidor cerró la conexión después de responder
-            disconnect();
-            throw new IOException("Servidor cerró conexión después de responder", e);
         } catch (IOException e) {
             disconnect();
             throw e;
@@ -106,11 +86,6 @@ public class SSLClient implements ITCPClient {
 
     @Override
     public boolean isConnected() {
-        if (!connected) return false;
-        if (socket == null || socket.isClosed()) {
-            connected = false;
-            return false;
-        }
-        return true;
+        return connected && socket != null && !socket.isClosed();
     }
 }

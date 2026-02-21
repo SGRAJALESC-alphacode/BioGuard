@@ -8,7 +8,7 @@ import org.BioGuard.network.protocol.LengthPrefixedProtocol;
 import java.io.IOException;
 
 /**
- * Controlador que maneja la comunicación con el servidor.
+ * Controlador de comunicación con el servidor.
  *
  * @author Sergio Grajales
  * @author Jhonatan Tamayo
@@ -23,7 +23,9 @@ public class ClienteController {
     private boolean conectado = false;
 
     /**
-     * Conecta al servidor.
+     * Establece la conexión con el servidor.
+     *
+     * @return true si la conexión fue exitosa
      */
     public boolean conectar() {
         try {
@@ -36,33 +38,30 @@ public class ClienteController {
             IMessageProtocol protocol = new LengthPrefixedProtocol();
             client = new SSLClient(config, protocol);
 
-            System.out.println("Conectando a " + SERVER_HOST + ":" + SERVER_PORT + "...");
+            System.out.print("Conectando a " + SERVER_HOST + ":" + SERVER_PORT + "... ");
             client.connect();
             conectado = true;
-            System.out.println(" Conectado al servidor");
+            System.out.println("Conectado.");
             return true;
 
         } catch (IOException e) {
-            System.err.println(" Error de conexión: " + e.getMessage());
+            System.err.println("\nError de conexión: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Envía un mensaje al servidor y retorna la respuesta.
+     * Envía un comando al servidor y retorna la respuesta.
+     *
+     * @param comando Comando a enviar
+     * @return Respuesta del servidor
+     * @throws IOException Si hay error de comunicación
      */
-    public String enviarComando(String comando) {
+    public String enviarComando(String comando) throws IOException {
         if (!conectado || client == null) {
-            return "ERROR: No conectado al servidor";
+            throw new IOException("No conectado al servidor");
         }
-
-        try {
-            System.out.println("> Enviando: " + comando);
-            String respuesta = client.sendMessage(comando);
-            return respuesta;
-        } catch (IOException e) {
-            return "ERROR: " + e.getMessage();
-        }
+        return client.sendMessage(comando);
     }
 
     /**
@@ -75,6 +74,11 @@ public class ClienteController {
         }
     }
 
+    /**
+     * Verifica si está conectado.
+     *
+     * @return true si está conectado
+     */
     public boolean isConectado() {
         return conectado;
     }
