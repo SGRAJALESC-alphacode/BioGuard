@@ -1,6 +1,0 @@
-Paciente ID: 008
-Nombre: Stefania buscando amante
-Documento: 2384432
-Edad: 24
-Archivo FASTA: data/adn/patient008.fasta
-Enfermedades detectadas: Cancer

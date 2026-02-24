@@ -1,6 +1,0 @@
-Paciente ID: 009
-Nombre: petro andres turbay
-Documento: 75068908
-Edad: 69
-Archivo FASTA: data/adn/patient009.fasta
-Enfermedades detectadas: Rabia

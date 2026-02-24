@@ -1,6 +1,0 @@
-Paciente ID: 005
-Nombre: Cristiano pepe
-Documento: 75069145
-Edad: 23
-Archivo FASTA: data/adn/patient005.fasta
-Enfermedades detectadas: Ebola, Rabia
