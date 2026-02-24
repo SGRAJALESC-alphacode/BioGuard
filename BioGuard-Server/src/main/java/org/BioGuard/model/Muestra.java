@@ -24,12 +24,24 @@ public class Muestra {
         this.documentoPaciente = documentoPaciente;
         this.secuencia = secuencia;
         this.fecha = LocalDateTime.now();
-        this.id = generarId(documentoPaciente);
+        this.id = generarId();
     }
 
-    private String generarId(String documento) {
+    private String generarId() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-        return documento + "_" + fecha.format(formatter);
+        return documentoPaciente + "_" + fecha.format(formatter);
+    }
+
+    /**
+     * Constructor para reconstruir muestra desde archivo.
+     */
+    public static Muestra desdeArchivo(String documento, String id, LocalDateTime fecha, String rutaArchivo) {
+        Muestra muestra = new Muestra();
+        muestra.setDocumentoPaciente(documento);
+        muestra.setId(id);
+        muestra.setFecha(fecha);
+        muestra.setArchivoPath(rutaArchivo);
+        return muestra;
     }
 
     // Getters y Setters
@@ -56,5 +68,11 @@ public class Muestra {
     public String getNombreArchivo() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
         return "muestra_" + fecha.format(formatter) + ".fasta";
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Muestra{id='%s', documento='%s', fecha=%s}",
+                id, documentoPaciente, fecha);
     }
 }

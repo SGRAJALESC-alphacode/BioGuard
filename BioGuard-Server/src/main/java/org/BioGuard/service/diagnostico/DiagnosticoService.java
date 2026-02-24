@@ -13,62 +13,65 @@ import java.util.Optional;
 /**
  * Servicio de diagnósticos - Orquestador.
  *
+ * <p>Responsabilidad Única: Coordinar las operaciones de diagnóstico
+ * delegando en los repositorios y procesadores especializados.</p>
+ *
  * @author Sergio Grajales
  * @author Jhonatan Tamayo
  * @version 1.0
  */
 public class DiagnosticoService implements IDiagnosticoService {
 
-    private final DiagnosticoRepository repository;
-    private final MuestraProcessor processor;
+    private final DiagnosticoRepository diagnosticoRepository;
+    private final MuestraRepository muestraRepository;
+    private final MuestraProcessor muestraProcessor;
     private final DiagnosticoCSVGenerator csvGenerator;
+    private final IVirusService virusService;
 
     public DiagnosticoService(IVirusService virusService) {
-        this.repository = new DiagnosticoRepository();
-        this.processor = new MuestraProcessor(virusService);
+        this.virusService = virusService;
+        this.diagnosticoRepository = new DiagnosticoRepository();
+        this.muestraRepository = new MuestraRepository();
+        this.muestraProcessor = new MuestraProcessor(virusService);
         this.csvGenerator = new DiagnosticoCSVGenerator();
-        // Cargar diagnósticos existentes al iniciar
-        this.repository.cargarDiagnosticosDesdeArchivos();
+
+        // Cargar diagnósticos existentes
+        diagnosticoRepository.cargarDiagnosticosDesdeArchivos();
     }
 
     @Override
     public Diagnostico procesarMuestra(String documento, String secuencia)
             throws DiagnosticoException {
 
-        // Validar secuencia
-        processor.validarSecuencia(secuencia);
+        // 1. Validar
+        muestraProcessor.validarSecuencia(secuencia);
 
-        // Crear y guardar muestra
+        // 2. Crear y guardar muestra
         Muestra muestra = new Muestra(documento, secuencia);
         try {
-            repository.guardarMuestra(muestra);
+            muestraRepository.guardar(muestra);
         } catch (IOException e) {
             throw new DiagnosticoException("Error guardando muestra: " + e.getMessage());
         }
 
-        // Detectar virus
-        List<Diagnostico.HallazgoVirus> hallazgos = processor.detectarVirus(secuencia);
+        // 3. Detectar virus
+        List<Diagnostico.HallazgoVirus> hallazgos =
+                muestraProcessor.detectarVirus(secuencia);
 
-        // Crear diagnóstico
+        // 4. Crear diagnóstico
         String fechaStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String id = documento + "_" + fechaStr;
 
-        Diagnostico diagnostico = new Diagnostico();
-        diagnostico.setId(id);
-        diagnostico.setDocumentoPaciente(documento);
+        Diagnostico diagnostico = new Diagnostico(documento, id);
         diagnostico.setFecha(LocalDateTime.now());
+        hallazgos.forEach(diagnostico::agregarHallazgo);
 
-        for (Diagnostico.HallazgoVirus h : hallazgos) {
-            diagnostico.agregarHallazgo(h);
-        }
+        // 5. Guardar diagnóstico
+        diagnosticoRepository.guardar(diagnostico);
 
-        // Guardar en memoria
-        repository.guardarDiagnostico(diagnostico);
-
-        // Generar CSV
+        // 6. Generar CSV (opcional, no detiene el flujo)
         try {
-            String csvPath = csvGenerator.generarCSV(diagnostico);
-            System.out.println("[Service] CSV generado: " + csvPath);
+            csvGenerator.generarCSV(diagnostico);
         } catch (IOException e) {
             System.err.println("Error generando CSV: " + e.getMessage());
         }
@@ -78,21 +81,36 @@ public class DiagnosticoService implements IDiagnosticoService {
 
     @Override
     public Optional<Diagnostico> buscarPorId(String id) {
-        return repository.buscarPorId(id);
+        return diagnosticoRepository.buscarPorId(id);
     }
 
     @Override
     public List<Diagnostico> buscarPorPaciente(String documento) {
-        return repository.buscarPorPaciente(documento);
+        return diagnosticoRepository.buscarPorPaciente(documento);
+    }
+
+    @Override
+    public List<Diagnostico> listarTodos() {
+        return diagnosticoRepository.listarTodos();
     }
 
     @Override
     public Muestra guardarMuestra(Muestra muestra) throws IOException {
-        return repository.guardarMuestra(muestra);
+        return muestraRepository.guardar(muestra);
     }
 
     @Override
     public String generarCSV(Diagnostico diagnostico) throws IOException {
         return csvGenerator.generarCSV(diagnostico);
+    }
+
+    @Override
+    public List<Muestra> obtenerMuestrasDePaciente(String documento) {
+        return muestraRepository.buscarPorPaciente(documento);
+    }
+
+    @Override
+    public Optional<Muestra> obtenerMuestraPorId(String id) {
+        return muestraRepository.buscarPorId(id);
     }
 }

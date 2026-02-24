@@ -14,4 +14,9 @@ public interface IDiagnosticoService {
     Optional<Diagnostico> buscarPorId(String id);
     List<Diagnostico> buscarPorPaciente(String documento);
     String generarCSV(Diagnostico diagnostico) throws IOException;
+    List<Diagnostico> listarTodos();
+
+    // NUEVOS MÉTODOS PARA MUESTRAS
+    List<Muestra> obtenerMuestrasDePaciente(String documento);
+    Optional<Muestra> obtenerMuestraPorId(String id);
 }

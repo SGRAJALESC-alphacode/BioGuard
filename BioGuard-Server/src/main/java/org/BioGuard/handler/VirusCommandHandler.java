@@ -2,69 +2,113 @@ package org.BioGuard.handler;
 
 import org.BioGuard.model.Virus;
 import org.BioGuard.service.IVirusService;
+
 import java.util.List;
 
+/**
+ * Manejador de comandos relacionados con virus.
+ *
+ * @author Sergio Grajales
+ * @author Jhonatan Tamayo
+ * @version 1.0
+ */
 public class VirusCommandHandler {
 
-    private final IVirusService service;
-    private final ResponseFormatter fmt;
+    private final IVirusService virusService;
 
-    public VirusCommandHandler(IVirusService service, ResponseFormatter fmt) {
-        this.service = service;
-        this.fmt = fmt;
+    public VirusCommandHandler(IVirusService virusService) {
+        this.virusService = virusService;
     }
 
-    public String handleRegistroSimple(String data) {
+    public String handleRegistroSimple(String datos) {
         try {
-            String[] p = data.split("\\|");
-            if (p.length < 2) return fmt.error("Formato: nombre|nivel");
+            String[] partes = datos.split("\\|");
+            if (partes.length < 2) {
+                return "ERROR: Formato inválido. Se esperaba: nombre|nivel";
+            }
 
             Virus virus = new Virus();
-            virus.setNombre(p[0]);
-            virus.setNivelPeligrosidad(nivelToInt(p[1]));
-            if (p.length > 2) virus.setSintomas(p[2]);
+            virus.setNombre(partes[0].trim());
+            virus.setNivelPeligrosidad(obtenerNivelNumerico(partes[1].trim()));
 
-            return fmt.virusRegistrado(service.registrarVirus(virus));
+            if (partes.length > 2) {
+                virus.setSecuencia(partes[2].trim());
+            }
+
+            Virus registrado = virusService.registrarVirus(virus);
+            return "VIRUS_REGISTRADO:" + registrado.getId();
+
         } catch (Exception e) {
-            return fmt.error(e.getMessage());
+            return "ERROR: " + e.getMessage();
         }
     }
 
-    public String handleRegistroCompleto(String data) {
+    public String handleRegistroCompleto(String datos) {
         try {
-            String[] p = data.split(",");
-            if (p.length < 3) return fmt.error("Requiere nombre,tipo,nivel");
+            String[] partes = datos.split(",");
+            if (partes.length < 3) {
+                return "ERROR: Se requiere al menos nombre,tipo,nivel";
+            }
 
             Virus virus = new Virus();
-            virus.setNombre(p[0].trim());
-            virus.setTipo(p[1].trim());
-            virus.setNivelPeligrosidad(Integer.parseInt(p[2].trim()));
-            if (p.length > 3) virus.setSintomas(p[3].trim());
-            if (p.length > 4) virus.setTratamiento(p[4].trim());
+            virus.setNombre(partes[0].trim());
+            virus.setTipo(partes[1].trim());
+            virus.setNivelPeligrosidad(Integer.parseInt(partes[2].trim()));
 
-            return fmt.virusRegistrado(service.registrarVirus(virus));
+            if (partes.length > 3) virus.setSintomas(partes[3].trim());
+            if (partes.length > 4) virus.setTratamiento(partes[4].trim());
+            if (partes.length > 5) virus.setSecuencia(partes[5].trim());
+
+            Virus registrado = virusService.registrarVirus(virus);
+            return "VIRUS_REGISTRADO:" + registrado.getId();
+
         } catch (NumberFormatException e) {
-            return fmt.error("Nivel debe ser número (1-5)");
+            return "ERROR: Nivel debe ser número (1-5)";
+        } catch (Exception e) {
+            return "ERROR: " + e.getMessage();
         }
     }
 
     public String handleConsulta(String nombre) {
-        List<Virus> list = service.buscarPorNombre(nombre, true);
-        return list.isEmpty() ? fmt.error("Virus no encontrado") : fmt.virusInfo(list.get(0));
+        List<Virus> virus = virusService.buscarPorNombre(nombre.trim(), true);
+        if (virus.isEmpty()) {
+            return "ERROR: Virus no encontrado: " + nombre;
+        }
+
+        Virus v = virus.get(0);
+        return String.format("VIRUS:%s,%s,%d,%s,%s,%s",
+                v.getNombre(), v.getTipo(), v.getNivelPeligrosidad(),
+                v.getSintomas() != null ? v.getSintomas() : "",
+                v.getTratamiento() != null ? v.getTratamiento() : "",
+                v.getSecuencia() != null ? v.getSecuencia() : "");
     }
 
-    public String handleListar(String ignored) {
-        return fmt.listaVirus(service.listarTodos());
+    public String handleListar(String ignorado) {
+        List<Virus> virus = virusService.listarTodos();
+        if (virus.isEmpty()) {
+            return "No hay virus registrados";
+        }
+
+        StringBuilder sb = new StringBuilder("VIRUS:");
+        for (Virus v : virus) {
+            sb.append(String.format("\n%s,%s,%d,%s",
+                    v.getNombre(), v.getTipo(), v.getNivelPeligrosidad(),
+                    v.getSecuencia() != null ? v.getSecuencia().substring(0, Math.min(20, v.getSecuencia().length())) + "..." : ""));
+        }
+        return sb.toString();
     }
 
-    private int nivelToInt(String nivel) {
+    private int obtenerNivelNumerico(String nivel) {
         switch (nivel.toLowerCase()) {
             case "poco infeccioso": return 1;
             case "normal": return 2;
             case "altamente infeccioso": return 3;
             default:
-                try { return Integer.parseInt(nivel); }
-                catch (NumberFormatException e) { return 2; }
+                try {
+                    return Integer.parseInt(nivel);
+                } catch (NumberFormatException e) {
+                    return 2;
+                }
         }
     }
 }

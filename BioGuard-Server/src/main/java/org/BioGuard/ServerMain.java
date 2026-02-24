@@ -22,9 +22,9 @@ public class ServerMain {
     private static final boolean USAR_SSL = true;
 
     public static void main(String[] args) {
-        System.out.println("╔════════════════════════════════════╗");
-        System.out.println("║     SERVIDOR BioGuard v1.0         ║");
-        System.out.println("╚════════════════════════════════════╝");
+        System.out.println("╔═════════════════════════╗");
+        System.out.println("║     SERVIDOR BioGuard   ║");
+        System.out.println("╚═════════════════════════╝");
 
         try {
             System.out.println("\n Inicializando servicios...");
